@@ -1,0 +1,383 @@
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: #ffffff;
+    color: #262626;
+}
+
+a {
+    color: #6b3f63;
+}
+
+
+.site-header {
+    background-color: #3f2f3b;
+    color: #ffffff;
+    padding: 12px 24px;
+}
+
+.site-header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.site-title {
+    font-size: 15px;
+    font-weight: bold;
+    letter-spacing: 0.3px;
+}
+
+.nav {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+}
+
+.nav a {
+    color: #d8cdd5;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+.nav a.active,
+.nav a:hover {
+    color: #ffffff;
+    text-decoration: underline;
+}
+
+.auth-main {
+    padding: 48px 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.auth-box {
+    background: #ffffff;
+    border: 1px solid #cfcfcf;
+    padding: 22px 24px;
+    width: 100%;
+    max-width: 300px;
+}
+
+.auth-box h1 {
+    margin: 0 0 14px;
+    font-size: 17px;
+    border-bottom: 1px solid #e2e2e2;
+    padding-bottom: 10px;
+}
+
+.auth-box label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 13px;
+    color: #444;
+}
+
+.auth-box input {
+    width: 100%;
+    padding: 6px 8px;
+    margin-bottom: 14px;
+    border: 1px solid #b3b3b3;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.auth-box button {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #3f2f3b;
+    background-color: #3f2f3b;
+    color: #ffffff;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.auth-box button:hover {
+    background-color: #543f4f;
+}
+
+.auth-hint {
+    margin: 14px 0 0;
+    font-size: 13px;
+    color: #555;
+}
+
+.alert {
+    padding: 8px 10px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    border: 1px solid;
+}
+
+.alert-error {
+    background-color: #fbebeb;
+    color: #8a2727;
+    border-color: #e3a3a3;
+}
+
+.alert-success {
+    background-color: #eaf5ec;
+    color: #235c31;
+    border-color: #a9d3b2;
+}
+
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.page-header h1 {
+    font-size: 17px;
+    margin: 0;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 24px auto;
+    padding: 0 20px;
+}
+
+.btn {
+    display: inline-block;
+    padding: 7px 12px;
+    border: 1px solid #3f2f3b;
+    background-color: #3f2f3b;
+    color: #ffffff;
+    font-size: 13px;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.btn:hover {
+    background-color: #543f4f;
+}
+
+.btn-secondary {
+    background-color: #ffffff;
+    color: #262626;
+    border-color: #b3b3b3;
+}
+
+.btn-secondary:hover {
+    background-color: #f0f0f0;
+}
+
+.btn-danger {
+    background-color: #8a2727;
+    border-color: #8a2727;
+}
+
+.btn-danger:hover {
+    background-color: #6e1f1f;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+}
+
+th, td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid #e2e2e2;
+    font-size: 13px;
+}
+
+th {
+    background-color: #f2f2f2;
+    border-bottom: 1px solid #cfcfcf;
+}
+
+td.actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+td.actions form {
+    margin: 0;
+}
+
+.search-form {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.search-form input[type="text"] {
+    padding: 6px 8px;
+    border: 1px solid #b3b3b3;
+    font-size: 13px;
+    font-family: inherit;
+}
+
+.entity-form {
+    max-width: 360px;
+    background: #ffffff;
+    border: 1px solid #cfcfcf;
+    padding: 20px;
+}
+
+.entity-form label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 13px;
+    color: #444;
+}
+
+.entity-form input,
+.entity-form select,
+.entity-form textarea {
+    width: 100%;
+    padding: 6px 8px;
+    margin-bottom: 14px;
+    border: 1px solid #b3b3b3;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.entity-form .btn {
+    margin-right: 8px;
+}
+
+.checkbox-list {
+    border: 1px solid #b3b3b3;
+    padding: 8px 10px;
+    margin-bottom: 14px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.checkbox-item {
+    display: block !important;
+    font-size: 13px !important;
+    font-weight: normal;
+    color: #262626;
+    margin-bottom: 6px !important;
+    cursor: pointer;
+}
+
+.checkbox-item input {
+    width: auto !important;
+    margin: 0 6px 0 0 !important;
+    border: none !important;
+    vertical-align: middle;
+}
+
+.checkbox-empty {
+    font-size: 13px;
+    color: #777;
+}
+
+.entity-form textarea {
+    resize: vertical;
+    font-family: inherit;
+}
+
+.entity-form select {
+    background-color: #ffffff;
+}
+
+.status {
+    display: inline-block;
+    padding: 3px 8px;
+    font-size: 12px;
+    border: 1px solid;
+}
+
+.status-planned {
+    color: #5b4a00;
+    border-color: #d8c165;
+    background-color: #fbf3d9;
+}
+
+.status-done {
+    color: #235c31;
+    border-color: #a9d3b2;
+    background-color: #eaf5ec;
+}
+
+.status-cancelled {
+    color: #8a2727;
+    border-color: #e3a3a3;
+    background-color: #fbebeb;
+}
+
+.subnav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 18px;
+    border-bottom: 1px solid #e2e2e2;
+}
+
+.subnav a {
+    padding: 8px 12px;
+    font-size: 13px;
+    text-decoration: none;
+    color: #555;
+    border-bottom: 2px solid transparent;
+}
+
+.subnav a.active,
+.subnav a:hover {
+    color: #3f2f3b;
+    border-bottom-color: #3f2f3b;
+}
+
+.filter-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.filter-form label {
+    font-size: 13px;
+    color: #444;
+}
+
+.filter-form select,
+.filter-form input {
+    padding: 6px 8px;
+    border: 1px solid #b3b3b3;
+    font-size: 13px;
+    font-family: inherit;
+}
+
+.report-block {
+    border: 1px solid #e2e2e2;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    background: #ffffff;
+}
+
+.report-block-title {
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+.report-sublist {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 13px;
+    color: #333;
+}
+
+.report-empty {
+    margin: 0;
+    font-size: 13px;
+    color: #777;
+}
