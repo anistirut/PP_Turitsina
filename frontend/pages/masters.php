@@ -88,7 +88,18 @@ if ($action === 'edit' && $id > 0 && !$errors) {
 }
 
 $allServices = $serviceContext->getAll();
-$mastersWithServices = ($action === 'list') ? $masterContext->getAllWithServices() : [];
+
+$sort = in_array($_GET['sort'] ?? '', MasterContext::SORTABLE_COLUMNS, true) ? $_GET['sort'] : 'last_name';
+$dir = ($_GET['dir'] ?? '') === 'desc' ? 'desc' : 'asc';
+$perPage = 5;
+$page = max(1, (int)($_GET['page'] ?? 1));
+
+$totalMasters = ($action === 'list') ? $masterContext->countAll() : 0;
+$totalPages = max(1, (int)ceil($totalMasters / $perPage));
+$page = min($page, $totalPages);
+$offset = ($page - 1) * $perPage;
+
+$mastersWithServices = ($action === 'list') ? $masterContext->getAllWithServices($sort, $dir, $perPage, $offset) : [];
 
 $pageTitle = 'Мастера';
 $activePage = 'masters';
@@ -100,7 +111,10 @@ require_once __DIR__ . '/../elements/siteHeader.php';
     <div class="page-header">
         <h1>Мастера</h1>
         <?php if ($action === 'list'): ?>
-            <a class="btn" href="masters.php?action=add">Добавить мастера</a>
+            <div class="header-actions">
+                <a class="btn btn-secondary" href="exportExcel.php?entity=masters">Скачать Excel</a>
+                <a class="btn" href="masters.php?action=add">Добавить мастера</a>
+            </div>
         <?php endif; ?>
     </div>
 
@@ -109,10 +123,10 @@ require_once __DIR__ . '/../elements/siteHeader.php';
         <table>
             <thead>
                 <tr>
-                    <th>Фамилия</th>
-                    <th>Имя</th>
-                    <th>Телефон</th>
-                    <th>Дата приёма</th>
+                    <th><a href="<?= h(queryStringWith(['sort' => 'last_name', 'dir' => nextSortDirection('last_name', $sort, $dir), 'page' => 1])) ?>">Фамилия<?= sortIndicator('last_name', $sort, $dir) ?></a></th>
+                    <th><a href="<?= h(queryStringWith(['sort' => 'first_name', 'dir' => nextSortDirection('first_name', $sort, $dir), 'page' => 1])) ?>">Имя<?= sortIndicator('first_name', $sort, $dir) ?></a></th>
+                    <th><a href="<?= h(queryStringWith(['sort' => 'phone', 'dir' => nextSortDirection('phone', $sort, $dir), 'page' => 1])) ?>">Телефон<?= sortIndicator('phone', $sort, $dir) ?></a></th>
+                    <th><a href="<?= h(queryStringWith(['sort' => 'hire_date', 'dir' => nextSortDirection('hire_date', $sort, $dir), 'page' => 1])) ?>">Дата приёма<?= sortIndicator('hire_date', $sort, $dir) ?></a></th>
                     <th>Услуги</th>
                     <th></th>
                 </tr>
@@ -141,6 +155,8 @@ require_once __DIR__ . '/../elements/siteHeader.php';
                 <?php endforeach; ?>
             </tbody>
         </table>
+
+        <?php require __DIR__ . '/../elements/pagination.php'; ?>
 
     <?php else: ?>
 

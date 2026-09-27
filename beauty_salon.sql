@@ -33,7 +33,7 @@ CREATE TABLE `appointments` (
   `master_id` int UNSIGNED NOT NULL,
   `service_id` int UNSIGNED NOT NULL,
   `room_id` int UNSIGNED NOT NULL,
-  `appointment_date` datetime NOT NULL,
+  `appointment_datetime` datetime NOT NULL,
   `status` enum('Запланировано','Завершено','Отменено') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Запланировано',
   `comment` text COLLATE utf8mb4_unicode_ci
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -42,7 +42,7 @@ CREATE TABLE `appointments` (
 -- Дамп данных таблицы `appointments`
 --
 
-INSERT INTO `appointments` (`id`, `client_id`, `master_id`, `service_id`, `room_id`, `appointment_date`, `status`, `comment`) VALUES
+INSERT INTO `appointments` (`id`, `client_id`, `master_id`, `service_id`, `room_id`, `appointment_datetime`, `status`, `comment`) VALUES
 (2, 2, 2, 3, 2, '2026-09-15 12:00:00', 'Запланировано', NULL),
 (3, 3, 3, 5, 3, '2026-09-10 09:00:00', 'Завершено', 'Свадебный макияж'),
 (5, 1, 5, 5, 1, '2026-09-13 18:00:00', 'Запланировано', 'очень важная запись');
@@ -188,7 +188,7 @@ INSERT INTO `users` (`id`, `login`, `password`) VALUES
 --
 ALTER TABLE `appointments`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_appointments_date` (`appointment_date`),
+  ADD KEY `idx_appointments_date` (`appointment_datetime`),
   ADD KEY `fk_appointments_client` (`client_id`),
   ADD KEY `fk_appointments_master` (`master_id`),
   ADD KEY `fk_appointments_service` (`service_id`),

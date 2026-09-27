@@ -44,14 +44,14 @@ class ReportContext
     public function masterSchedule(int $masterId): array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT a.appointment_date, c.last_name AS client_last_name, c.first_name AS client_first_name,
+            "SELECT a.appointment_datetime, c.last_name AS client_last_name, c.first_name AS client_first_name,
                     s.name AS service_name, r.number AS room_number, a.status
              FROM appointments a
              JOIN clients c ON c.id = a.client_id
              JOIN services s ON s.id = a.service_id
              JOIN rooms r ON r.id = a.room_id
              WHERE a.master_id = ?
-             ORDER BY a.appointment_date"
+             ORDER BY a.appointment_datetime"
         );
         $stmt->bind_param('i', $masterId);
         $stmt->execute();
@@ -72,14 +72,14 @@ class ReportContext
     public function clientHistory(int $clientId): array
     {
         $stmt = $this->mysqli->prepare(
-            "SELECT a.appointment_date, m.last_name AS master_last_name, m.first_name AS master_first_name,
+            "SELECT a.appointment_datetime, m.last_name AS master_last_name, m.first_name AS master_first_name,
                     s.name AS service_name, r.number AS room_number, a.status
              FROM appointments a
              JOIN masters m ON m.id = a.master_id
              JOIN services s ON s.id = a.service_id
              JOIN rooms r ON r.id = a.room_id
              WHERE a.client_id = ?
-             ORDER BY a.appointment_date DESC"
+             ORDER BY a.appointment_datetime DESC"
         );
         $stmt->bind_param('i', $clientId);
         $stmt->execute();
@@ -128,12 +128,12 @@ class ReportContext
         $types = '';
 
         if ($dateFrom !== null && $dateFrom !== '') {
-            $conditions[] = 'a.appointment_date >= ?';
+            $conditions[] = 'a.appointment_datetime >= ?';
             $params[] = $dateFrom . ' 00:00:00';
             $types .= 's';
         }
         if ($dateTo !== null && $dateTo !== '') {
-            $conditions[] = 'a.appointment_date <= ?';
+            $conditions[] = 'a.appointment_datetime <= ?';
             $params[] = $dateTo . ' 23:59:59';
             $types .= 's';
         }

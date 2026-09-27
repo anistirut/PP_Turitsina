@@ -69,7 +69,17 @@ if ($action === 'edit' && $id > 0 && !$errors) {
     ];
 }
 
-$rooms = ($action === 'list') ? $roomContext->getAll() : [];
+$sort = in_array($_GET['sort'] ?? '', RoomContext::SORTABLE_COLUMNS, true) ? $_GET['sort'] : 'number';
+$dir = ($_GET['dir'] ?? '') === 'desc' ? 'desc' : 'asc';
+$perPage = 5;
+$page = max(1, (int)($_GET['page'] ?? 1));
+
+$totalRooms = ($action === 'list') ? $roomContext->countAll() : 0;
+$totalPages = max(1, (int)ceil($totalRooms / $perPage));
+$page = min($page, $totalPages);
+$offset = ($page - 1) * $perPage;
+
+$rooms = ($action === 'list') ? $roomContext->getAll($sort, $dir, $perPage, $offset) : [];
 
 $pageTitle = 'Кабинеты';
 $activePage = 'rooms';
@@ -81,7 +91,10 @@ require_once __DIR__ . '/../elements/siteHeader.php';
     <div class="page-header">
         <h1>Кабинеты</h1>
         <?php if ($action === 'list'): ?>
-            <a class="btn" href="rooms.php?action=add">Добавить кабинет</a>
+            <div class="header-actions">
+                <a class="btn btn-secondary" href="exportExcel.php?entity=rooms">Скачать Excel</a>
+                <a class="btn" href="rooms.php?action=add">Добавить кабинет</a>
+            </div>
         <?php endif; ?>
     </div>
 
@@ -90,8 +103,8 @@ require_once __DIR__ . '/../elements/siteHeader.php';
         <table>
             <thead>
                 <tr>
-                    <th>Номер</th>
-                    <th>Описание</th>
+                    <th><a href="<?= h(queryStringWith(['sort' => 'number', 'dir' => nextSortDirection('number', $sort, $dir), 'page' => 1])) ?>">Номер<?= sortIndicator('number', $sort, $dir) ?></a></th>
+                    <th><a href="<?= h(queryStringWith(['sort' => 'description', 'dir' => nextSortDirection('description', $sort, $dir), 'page' => 1])) ?>">Описание<?= sortIndicator('description', $sort, $dir) ?></a></th>
                     <th></th>
                 </tr>
             </thead>
@@ -115,6 +128,8 @@ require_once __DIR__ . '/../elements/siteHeader.php';
                 <?php endforeach; ?>
             </tbody>
         </table>
+
+        <?php require __DIR__ . '/../elements/pagination.php'; ?>
 
     <?php else: ?>
 

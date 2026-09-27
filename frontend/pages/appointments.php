@@ -22,6 +22,9 @@ $roomContext = new RoomContext($mysqli);
 
 $action = $_GET['action'] ?? 'list';
 $id = (int)($_GET['id'] ?? 0);
+$filterClientId = (int)($_GET['filter_client_id'] ?? 0);
+$filterMasterId = (int)($_GET['filter_master_id'] ?? 0);
+$filterServiceId = (int)($_GET['filter_service_id'] ?? 0);
 $errors = [];
 $formData = [
     'client_id' => '',
@@ -40,6 +43,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
     exit;
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'quick_status') {
+    $quickId = (int)($_POST['id'] ?? 0);
+    $quickStatus = $_POST['status'] ?? '';
+
+    if (in_array($quickStatus, ['Завершено', 'Отменено'], true)) {
+        $quickAppointment = $appointmentContext->getById($quickId);
+        if ($quickAppointment) {
+            $appointmentContext->update(
+                $quickId,
+                $quickAppointment->client_id,
+                $quickAppointment->master_id,
+                $quickAppointment->service_id,
+                $quickAppointment->room_id,
+                $quickAppointment->appointment_datetime,
+                $quickStatus,
+                $quickAppointment->comment
+            );
+        }
+    }
+
+    header('Location: appointments.php');
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save') {
     $id = (int)($_POST['id'] ?? 0);
     $formData = [
@@ -51,6 +78,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save'
         'status' => trim($_POST['status'] ?? ''),
         'comment' => trim($_POST['comment'] ?? ''),
     ];
+
+    $appointmentDateTime = str_replace('T', ' ', $formData['appointment_date']);
+    if (strlen($appointmentDateTime) === 16) {
+        $appointmentDateTime .= ':00';
+    }
 
     if ($formData['client_id'] <= 0) {
         $errors[] = 'Выберите клиента.';
@@ -76,11 +108,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save'
         $errors[] = 'Выбранный мастер не оказывает эту услугу.';
     }
 
-    if (!$errors) {
-        $appointmentDate = str_replace('T', ' ', $formData['appointment_date']);
-        if (strlen($appointmentDate) === 16) {
-            $appointmentDate .= ':00';
+    if (!$errors && $formData['master_id'] > 0 && $formData['service_id'] > 0 && $formData['appointment_date'] !== '') {
+        $service = $serviceContext->getById($formData['service_id']);
+
+        if ($service) {
+            $masterConflict = $appointmentContext->findConflict($formData['master_id'], $appointmentDateTime, $service->duration_minutes, $id);
+            if ($masterConflict) {
+                $conflictStart = new DateTime($masterConflict['appointment_datetime']);
+                $conflictEnd = (clone $conflictStart)->modify('+' . $masterConflict['duration_minutes'] . ' minutes');
+                $errors[] = 'Мастер уже занят в это время: с ' . $conflictStart->format('d.m.Y H:i')
+                    . ' до ' . $conflictEnd->format('H:i') . '.';
+            }
+
+            if ($formData['room_id'] > 0) {
+                $roomConflict = $appointmentContext->findRoomConflict($formData['room_id'], $appointmentDateTime, $service->duration_minutes, $id);
+                if ($roomConflict) {
+                    $conflictStart = new DateTime($roomConflict['appointment_datetime']);
+                    $conflictEnd = (clone $conflictStart)->modify('+' . $roomConflict['duration_minutes'] . ' minutes');
+                    $errors[] = 'Кабинет уже занят в это время: с ' . $conflictStart->format('d.m.Y H:i')
+                        . ' до ' . $conflictEnd->format('H:i') . '.';
+                }
+            }
         }
+    }
+
+    if (!$errors) {
         $comment = $formData['comment'] !== '' ? $formData['comment'] : null;
 
         try {
@@ -91,7 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save'
                     $formData['master_id'],
                     $formData['service_id'],
                     $formData['room_id'],
-                    $appointmentDate,
+                    $appointmentDateTime,
                     $formData['status'],
                     $comment
                 );
@@ -101,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save'
                     $formData['master_id'],
                     $formData['service_id'],
                     $formData['room_id'],
-                    $appointmentDate,
+                    $appointmentDateTime,
                     $formData['status'],
                     $comment
                 );
@@ -130,16 +182,56 @@ if ($action === 'edit' && $id > 0 && !$errors) {
         'master_id' => $appointment->master_id,
         'service_id' => $appointment->service_id,
         'room_id' => $appointment->room_id,
-        'appointment_date' => str_replace(' ', 'T', substr($appointment->appointment_date, 0, 16)),
+        'appointment_date' => str_replace(' ', 'T', substr($appointment->appointment_datetime, 0, 16)),
         'status' => $appointment->status,
         'comment' => $appointment->comment ?? '',
     ];
 }
 
-$appointments = ($action === 'list') ? $appointmentContext->getAllWithDetails() : [];
-$clients = ($action === 'add' || $action === 'edit') ? $clientContext->getAll() : [];
-$masters = ($action === 'add' || $action === 'edit') ? $masterContext->getAll() : [];
-$services = ($action === 'add' || $action === 'edit') ? $serviceContext->getAll() : [];
+if ($action === 'add' && $_SERVER['REQUEST_METHOD'] !== 'POST' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date'] ?? '')) {
+    $formData['appointment_date'] = $_GET['date'] . 'T10:00';
+}
+
+$view = ($_GET['view'] ?? 'list') === 'calendar' ? 'calendar' : 'list';
+$month = preg_match('/^\d{4}-\d{2}$/', $_GET['month'] ?? '') ? $_GET['month'] : date('Y-m');
+$monthTimestamp = strtotime($month . '-01');
+$calendarYear = (int)date('Y', $monthTimestamp);
+$calendarMonth = (int)date('n', $monthTimestamp);
+$prevMonth = date('Y-m', strtotime('-1 month', $monthTimestamp));
+$nextMonth = date('Y-m', strtotime('+1 month', $monthTimestamp));
+
+$monthNames = [
+    1 => 'Январь', 2 => 'Февраль', 3 => 'Март', 4 => 'Апрель', 5 => 'Май', 6 => 'Июнь',
+    7 => 'Июль', 8 => 'Август', 9 => 'Сентябрь', 10 => 'Октябрь', 11 => 'Ноябрь', 12 => 'Декабрь',
+];
+$monthLabel = $monthNames[$calendarMonth] . ' ' . $calendarYear;
+
+$appointmentsByDay = [];
+if ($action === 'list' && $view === 'calendar') {
+    foreach ($appointmentContext->getForMonth($calendarYear, $calendarMonth) as $row) {
+        $day = (int)date('j', strtotime($row['appointment_datetime']));
+        $appointmentsByDay[$day][] = $row;
+    }
+}
+
+$sort = array_key_exists($_GET['sort'] ?? '', AppointmentContext::SORTABLE_COLUMNS) ? $_GET['sort'] : 'date';
+$dir = ($_GET['dir'] ?? '') === 'asc' ? 'asc' : 'desc';
+$perPage = 5;
+$page = max(1, (int)($_GET['page'] ?? 1));
+
+$totalAppointments = ($action === 'list')
+    ? $appointmentContext->countWithDetails($filterClientId, $filterMasterId, $filterServiceId)
+    : 0;
+$totalPages = max(1, (int)ceil($totalAppointments / $perPage));
+$page = min($page, $totalPages);
+$offset = ($page - 1) * $perPage;
+
+$appointments = ($action === 'list')
+    ? $appointmentContext->getAllWithDetails($filterClientId, $filterMasterId, $filterServiceId, $sort, $dir, $perPage, $offset)
+    : [];
+$clients = ($action === 'list' || $action === 'add' || $action === 'edit') ? $clientContext->getAll() : [];
+$masters = ($action === 'list' || $action === 'add' || $action === 'edit') ? $masterContext->getAll() : [];
+$services = ($action === 'list' || $action === 'add' || $action === 'edit') ? $serviceContext->getAll() : [];
 $rooms = ($action === 'add' || $action === 'edit') ? $roomContext->getAll() : [];
 $masterServiceMap = ($action === 'add' || $action === 'edit') ? $masterContext->getAllServiceIds() : [];
 
@@ -159,21 +251,75 @@ require_once __DIR__ . '/../elements/siteHeader.php';
     <div class="page-header">
         <h1>Записи</h1>
         <?php if ($action === 'list'): ?>
-            <a class="btn" href="appointments.php?action=add">Новая запись</a>
+            <div class="header-actions">
+                <a class="btn btn-secondary" href="exportExcel.php?<?= h(http_build_query([
+                    'entity' => 'appointments',
+                    'filter_client_id' => $filterClientId ?: null,
+                    'filter_master_id' => $filterMasterId ?: null,
+                    'filter_service_id' => $filterServiceId ?: null,
+                ])) ?>">Скачать Excel</a>
+                <a class="btn" href="appointments.php?action=add">Новая запись</a>
+            </div>
         <?php endif; ?>
     </div>
 
     <?php if ($action === 'list'): ?>
 
+        <nav class="subnav">
+            <a href="appointments.php" class="<?= $view === 'list' ? 'active' : '' ?>">Список</a>
+            <a href="appointments.php?view=calendar&month=<?= h($month) ?>" class="<?= $view === 'calendar' ? 'active' : '' ?>">Календарь</a>
+        </nav>
+
+    <?php endif; ?>
+
+    <?php if ($action === 'list' && $view === 'list'): ?>
+
+        <form class="filter-form" method="get" action="">
+            <label for="filter_client_id">Клиент</label>
+            <select id="filter_client_id" name="filter_client_id">
+                <option value="">Все клиенты</option>
+                <?php foreach ($clients as $client): ?>
+                    <option value="<?= $client->id ?>" <?= $client->id === $filterClientId ? 'selected' : '' ?>>
+                        <?= h($client->last_name . ' ' . $client->first_name) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+
+            <label for="filter_master_id">Мастер</label>
+            <select id="filter_master_id" name="filter_master_id">
+                <option value="">Все мастера</option>
+                <?php foreach ($masters as $master): ?>
+                    <option value="<?= $master->id ?>" <?= $master->id === $filterMasterId ? 'selected' : '' ?>>
+                        <?= h($master->last_name . ' ' . $master->first_name) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+
+            <label for="filter_service_id">Услуга</label>
+            <select id="filter_service_id" name="filter_service_id">
+                <option value="">Все услуги</option>
+                <?php foreach ($services as $service): ?>
+                    <option value="<?= $service->id ?>" <?= $service->id === $filterServiceId ? 'selected' : '' ?>>
+                        <?= h($service->name) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+
+            <button type="submit" class="btn btn-secondary">Показать</button>
+            <?php if ($filterClientId > 0 || $filterMasterId > 0 || $filterServiceId > 0): ?>
+                <a class="btn btn-secondary" href="appointments.php">Сбросить</a>
+            <?php endif; ?>
+        </form>
+
         <table>
             <thead>
                 <tr>
-                    <th>Дата и время</th>
-                    <th>Клиент</th>
-                    <th>Мастер</th>
-                    <th>Услуга</th>
-                    <th>Кабинет</th>
-                    <th>Статус</th>
+                    <th><a href="<?= h(queryStringWith(['sort' => 'date', 'dir' => nextSortDirection('date', $sort, $dir), 'page' => 1])) ?>">Дата и время<?= sortIndicator('date', $sort, $dir) ?></a></th>
+                    <th><a href="<?= h(queryStringWith(['sort' => 'client', 'dir' => nextSortDirection('client', $sort, $dir), 'page' => 1])) ?>">Клиент<?= sortIndicator('client', $sort, $dir) ?></a></th>
+                    <th><a href="<?= h(queryStringWith(['sort' => 'master', 'dir' => nextSortDirection('master', $sort, $dir), 'page' => 1])) ?>">Мастер<?= sortIndicator('master', $sort, $dir) ?></a></th>
+                    <th><a href="<?= h(queryStringWith(['sort' => 'service', 'dir' => nextSortDirection('service', $sort, $dir), 'page' => 1])) ?>">Услуга<?= sortIndicator('service', $sort, $dir) ?></a></th>
+                    <th><a href="<?= h(queryStringWith(['sort' => 'room', 'dir' => nextSortDirection('room', $sort, $dir), 'page' => 1])) ?>">Кабинет<?= sortIndicator('room', $sort, $dir) ?></a></th>
+                    <th><a href="<?= h(queryStringWith(['sort' => 'status', 'dir' => nextSortDirection('status', $sort, $dir), 'page' => 1])) ?>">Статус<?= sortIndicator('status', $sort, $dir) ?></a></th>
                     <th></th>
                 </tr>
             </thead>
@@ -183,7 +329,7 @@ require_once __DIR__ . '/../elements/siteHeader.php';
                 <?php endif; ?>
                 <?php foreach ($appointments as $row): ?>
                     <tr>
-                        <td><?= h($row['appointment_date']) ?></td>
+                        <td><?= h($row['appointment_datetime']) ?></td>
                         <td><?= h($row['client_last_name'] . ' ' . $row['client_first_name']) ?></td>
                         <td><?= h($row['master_last_name'] . ' ' . $row['master_first_name']) ?></td>
                         <td><?= h($row['service_name']) ?></td>
@@ -192,6 +338,20 @@ require_once __DIR__ . '/../elements/siteHeader.php';
                             <span class="status <?= $statusClasses[$row['status']] ?? '' ?>"><?= h($row['status']) ?></span>
                         </td>
                         <td class="actions">
+                            <?php if ($row['status'] === 'Запланировано'): ?>
+                                <form method="post" action="appointments.php">
+                                    <input type="hidden" name="action" value="quick_status">
+                                    <input type="hidden" name="id" value="<?= $row['id'] ?>">
+                                    <input type="hidden" name="status" value="Завершено">
+                                    <button type="submit" class="btn btn-secondary btn-sm">Завершить</button>
+                                </form>
+                                <form method="post" action="appointments.php">
+                                    <input type="hidden" name="action" value="quick_status">
+                                    <input type="hidden" name="id" value="<?= $row['id'] ?>">
+                                    <input type="hidden" name="status" value="Отменено">
+                                    <button type="submit" class="btn btn-secondary btn-sm">Отменить</button>
+                                </form>
+                            <?php endif; ?>
                             <a class="btn btn-secondary" href="appointments.php?action=edit&id=<?= $row['id'] ?>">Изменить</a>
                             <form method="post" action="appointments.php" onsubmit="return confirm('Удалить запись?');">
                                 <input type="hidden" name="action" value="delete">
@@ -201,6 +361,66 @@ require_once __DIR__ . '/../elements/siteHeader.php';
                         </td>
                     </tr>
                 <?php endforeach; ?>
+            </tbody>
+        </table>
+
+        <?php require __DIR__ . '/../elements/pagination.php'; ?>
+
+    <?php elseif ($action === 'list' && $view === 'calendar'): ?>
+
+        <div class="calendar-nav">
+            <a class="btn btn-secondary" href="appointments.php?view=calendar&month=<?= h($prevMonth) ?>">&laquo; Пред.</a>
+            <span class="calendar-title"><?= h($monthLabel) ?></span>
+            <a class="btn btn-secondary" href="appointments.php?view=calendar&month=<?= h($nextMonth) ?>">След. &raquo;</a>
+        </div>
+
+        <table class="calendar-table">
+            <thead>
+                <tr>
+                    <th>Пн</th><th>Вт</th><th>Ср</th><th>Чт</th><th>Пт</th><th>Сб</th><th>Вс</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                <?php
+                $daysInMonth = (int)date('t', $monthTimestamp);
+                $firstWeekday = (int)date('N', $monthTimestamp);
+                $column = 0;
+
+                for ($i = 1; $i < $firstWeekday; $i++) {
+                    echo '<td class="calendar-empty"></td>';
+                    $column++;
+                }
+
+                for ($day = 1; $day <= $daysInMonth; $day++) {
+                    if ($column === 7) {
+                        echo '</tr><tr>';
+                        $column = 0;
+                    }
+                    $column++;
+                    $dateStr = sprintf('%04d-%02d-%02d', $calendarYear, $calendarMonth, $day);
+                    ?>
+                    <td class="calendar-day">
+                        <div class="calendar-day-number">
+                            <?= $day ?>
+                            <a class="calendar-add" href="appointments.php?action=add&date=<?= h($dateStr) ?>" title="Добавить запись на этот день">+</a>
+                        </div>
+                        <?php foreach ($appointmentsByDay[$day] ?? [] as $appt): ?>
+                            <a class="calendar-appt <?= $statusClasses[$appt['status']] ?? '' ?>" href="appointments.php?action=edit&id=<?= $appt['id'] ?>">
+                                <?= h(date('H:i', strtotime($appt['appointment_datetime']))) ?>
+                                <?= h($appt['client_last_name']) ?> — <?= h($appt['master_last_name']) ?>
+                            </a>
+                        <?php endforeach; ?>
+                    </td>
+                    <?php
+                }
+
+                while ($column < 7) {
+                    echo '<td class="calendar-empty"></td>';
+                    $column++;
+                }
+                ?>
+                </tr>
             </tbody>
         </table>
 

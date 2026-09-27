@@ -36,4 +36,29 @@ class UserContext
 
         return $id;
     }
+
+    public function getById(int $id): ?User
+    {
+        $stmt = $this->mysqli->prepare("SELECT id, login, password FROM users WHERE id = ?");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        if (!$row) {
+            return null;
+        }
+
+        return new User((int)$row['id'], $row['login'], $row['password']);
+    }
+
+    public function updatePassword(int $id, string $passwordHash): bool
+    {
+        $stmt = $this->mysqli->prepare("UPDATE users SET password = ? WHERE id = ?");
+        $stmt->bind_param('si', $passwordHash, $id);
+        $success = $stmt->execute();
+        $stmt->close();
+
+        return $success;
+    }
 }

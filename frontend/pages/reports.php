@@ -53,6 +53,8 @@ if ($type === 'masters_services') {
     $servicePopularity = $reportContext->servicePopularity($dateFrom !== '' ? $dateFrom : null, $dateTo !== '' ? $dateTo : null);
 }
 
+$canExportPdf = !(($type === 'master_schedule' && $masterId <= 0) || ($type === 'client_history' && $clientId <= 0));
+
 $pageTitle = 'Отчёты';
 $activePage = 'reports';
 require_once __DIR__ . '/../elements/head.php';
@@ -69,6 +71,10 @@ require_once __DIR__ . '/../elements/siteHeader.php';
             <a href="reports.php?type=<?= h($key) ?>" class="<?= $type === $key ? 'active' : '' ?>"><?= h($label) ?></a>
         <?php endforeach; ?>
     </nav>
+
+    <?php if ($canExportPdf): ?>
+        <p><a class="btn btn-secondary" href="reportPdf.php?<?= h(http_build_query($_GET)) ?>">Скачать PDF</a></p>
+    <?php endif; ?>
 
     <?php if ($type === 'masters_services'): ?>
 
@@ -122,7 +128,7 @@ require_once __DIR__ . '/../elements/siteHeader.php';
                     <?php endif; ?>
                     <?php foreach ($masterSchedule as $row): ?>
                         <tr>
-                            <td><?= h($row['appointment_date']) ?></td>
+                            <td><?= h($row['appointment_datetime']) ?></td>
                             <td><?= h($row['client_last_name'] . ' ' . $row['client_first_name']) ?></td>
                             <td><?= h($row['service_name']) ?></td>
                             <td><?= h($row['room_number']) ?></td>
@@ -165,7 +171,7 @@ require_once __DIR__ . '/../elements/siteHeader.php';
                     <?php endif; ?>
                     <?php foreach ($clientHistory as $row): ?>
                         <tr>
-                            <td><?= h($row['appointment_date']) ?></td>
+                            <td><?= h($row['appointment_datetime']) ?></td>
                             <td><?= h($row['master_last_name'] . ' ' . $row['master_first_name']) ?></td>
                             <td><?= h($row['service_name']) ?></td>
                             <td><?= h($row['room_number']) ?></td>

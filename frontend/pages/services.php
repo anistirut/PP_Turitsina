@@ -76,7 +76,17 @@ if ($action === 'edit' && $id > 0 && !$errors) {
     ];
 }
 
-$services = ($action === 'list') ? $serviceContext->getAll() : [];
+$sort = in_array($_GET['sort'] ?? '', ServiceContext::SORTABLE_COLUMNS, true) ? $_GET['sort'] : 'name';
+$dir = ($_GET['dir'] ?? '') === 'desc' ? 'desc' : 'asc';
+$perPage = 5;
+$page = max(1, (int)($_GET['page'] ?? 1));
+
+$totalServices = ($action === 'list') ? $serviceContext->countAll() : 0;
+$totalPages = max(1, (int)ceil($totalServices / $perPage));
+$page = min($page, $totalPages);
+$offset = ($page - 1) * $perPage;
+
+$services = ($action === 'list') ? $serviceContext->getAll($sort, $dir, $perPage, $offset) : [];
 
 $pageTitle = 'Услуги';
 $activePage = 'services';
@@ -88,7 +98,10 @@ require_once __DIR__ . '/../elements/siteHeader.php';
     <div class="page-header">
         <h1>Услуги</h1>
         <?php if ($action === 'list'): ?>
-            <a class="btn" href="services.php?action=add">Добавить услугу</a>
+            <div class="header-actions">
+                <a class="btn btn-secondary" href="exportExcel.php?entity=services">Скачать Excel</a>
+                <a class="btn" href="services.php?action=add">Добавить услугу</a>
+            </div>
         <?php endif; ?>
     </div>
 
@@ -97,9 +110,9 @@ require_once __DIR__ . '/../elements/siteHeader.php';
         <table>
             <thead>
                 <tr>
-                    <th>Название</th>
-                    <th>Длительность, мин</th>
-                    <th>Стоимость, ₽</th>
+                    <th><a href="<?= h(queryStringWith(['sort' => 'name', 'dir' => nextSortDirection('name', $sort, $dir), 'page' => 1])) ?>">Название<?= sortIndicator('name', $sort, $dir) ?></a></th>
+                    <th><a href="<?= h(queryStringWith(['sort' => 'duration_minutes', 'dir' => nextSortDirection('duration_minutes', $sort, $dir), 'page' => 1])) ?>">Длительность, мин<?= sortIndicator('duration_minutes', $sort, $dir) ?></a></th>
+                    <th><a href="<?= h(queryStringWith(['sort' => 'price', 'dir' => nextSortDirection('price', $sort, $dir), 'page' => 1])) ?>">Стоимость, ₽<?= sortIndicator('price', $sort, $dir) ?></a></th>
                     <th></th>
                 </tr>
             </thead>
@@ -124,6 +137,8 @@ require_once __DIR__ . '/../elements/siteHeader.php';
                 <?php endforeach; ?>
             </tbody>
         </table>
+
+        <?php require __DIR__ . '/../elements/pagination.php'; ?>
 
     <?php else: ?>
 

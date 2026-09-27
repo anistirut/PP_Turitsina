@@ -4,6 +4,8 @@ require_once __DIR__ . '/../models/Room.php';
 
 class RoomContext
 {
+    public const SORTABLE_COLUMNS = ['number', 'description'];
+
     private mysqli $mysqli;
 
     public function __construct(mysqli $mysqli)
@@ -11,18 +13,49 @@ class RoomContext
         $this->mysqli = $mysqli;
     }
 
-    public function getAll(): array
-    {
-        $result = $this->mysqli->query(
-            "SELECT id, number, description FROM rooms ORDER BY number"
-        );
+    public function getAll(
+        string $sortColumn = 'number',
+        string $sortDirection = 'ASC',
+        int $limit = 0,
+        int $offset = 0
+    ): array {
+        if (!in_array($sortColumn, self::SORTABLE_COLUMNS, true)) {
+            $sortColumn = 'number';
+        }
+        $sortDirection = strtoupper($sortDirection) === 'DESC' ? 'DESC' : 'ASC';
+
+        $sql = "SELECT id, number, description FROM rooms ORDER BY {$sortColumn} {$sortDirection}";
+
+        $params = [];
+        $types = '';
+        if ($limit > 0) {
+            $sql .= " LIMIT ? OFFSET ?";
+            $params = [$limit, $offset];
+            $types = 'ii';
+        }
+
+        $stmt = $this->mysqli->prepare($sql);
+        if ($params) {
+            $stmt->bind_param($types, ...$params);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
 
         $rooms = [];
         while ($row = $result->fetch_assoc()) {
             $rooms[] = $this->mapRow($row);
         }
+        $stmt->close();
 
         return $rooms;
+    }
+
+    public function countAll(): int
+    {
+        $result = $this->mysqli->query("SELECT COUNT(*) AS cnt FROM rooms");
+        $row = $result->fetch_assoc();
+
+        return (int)$row['cnt'];
     }
 
     public function getById(int $id): ?Room

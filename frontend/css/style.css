@@ -147,6 +147,11 @@ a {
     padding: 0 20px;
 }
 
+.header-actions {
+    display: flex;
+    gap: 8px;
+}
+
 .btn {
     display: inline-block;
     padding: 7px 12px;
@@ -181,6 +186,11 @@ a {
     background-color: #6e1f1f;
 }
 
+.btn-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
@@ -199,10 +209,51 @@ th {
     border-bottom: 1px solid #cfcfcf;
 }
 
+th a {
+    color: #262626;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+th a:hover {
+    color: #6b3f63;
+    text-decoration: underline;
+}
+
+/* ---------- Пагинация ---------- */
+
+.pagination {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+}
+
+.pagination .page-link {
+    display: inline-block;
+    padding: 5px 10px;
+    border: 1px solid #cfcfcf;
+    color: #262626;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+.pagination .page-link:hover {
+    background-color: #f0f0f0;
+}
+
+.pagination .page-current {
+    background-color: #3f2f3b;
+    border-color: #3f2f3b;
+    color: #ffffff;
+}
+
 td.actions {
     display: flex;
     gap: 6px;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 td.actions form {
@@ -380,4 +431,76 @@ td.actions form {
     margin: 0;
     font-size: 13px;
     color: #777;
+}
+
+/* ---------- Календарь записей ---------- */
+
+.calendar-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.calendar-title {
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.calendar-table {
+    table-layout: fixed;
+}
+
+.calendar-table th {
+    text-align: center;
+}
+
+.calendar-day,
+.calendar-empty {
+    vertical-align: top;
+    height: 100px;
+    width: 14.28%;
+    padding: 4px;
+}
+
+.calendar-empty {
+    background-color: #fafafa;
+}
+
+.calendar-day-number {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #555;
+    margin-bottom: 4px;
+}
+
+.calendar-add {
+    text-decoration: none;
+    color: #ffffff;
+    background-color: #3f2f3b;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+    text-align: center;
+    font-size: 12px;
+    border-radius: 2px;
+}
+
+.calendar-add:hover {
+    background-color: #543f4f;
+}
+
+.calendar-appt {
+    display: block;
+    font-size: 11px;
+    padding: 2px 4px;
+    margin-bottom: 3px;
+    text-decoration: none;
+    color: #262626;
+    border: 1px solid;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }

@@ -4,6 +4,8 @@ require_once __DIR__ . '/../models/Master.php';
 
 class MasterContext
 {
+    public const SORTABLE_COLUMNS = ['last_name', 'first_name', 'phone', 'hire_date'];
+
     private mysqli $mysqli;
 
     public function __construct(mysqli $mysqli)
@@ -29,16 +31,39 @@ class MasterContext
      * Список мастеров вместе со строкой оказываемых ими услуг (через JOIN и GROUP_CONCAT).
      * Возвращает массив вида ['master' => Master, 'services' => string].
      */
-    public function getAllWithServices(): array
-    {
+    public function getAllWithServices(
+        string $sortColumn = 'last_name',
+        string $sortDirection = 'ASC',
+        int $limit = 0,
+        int $offset = 0
+    ): array {
+        if (!in_array($sortColumn, self::SORTABLE_COLUMNS, true)) {
+            $sortColumn = 'last_name';
+        }
+        $sortDirection = strtoupper($sortDirection) === 'DESC' ? 'DESC' : 'ASC';
+
         $sql = "SELECT m.id, m.last_name, m.first_name, m.phone, m.hire_date,
                        GROUP_CONCAT(s.name ORDER BY s.name SEPARATOR ', ') AS services
                 FROM masters m
                 LEFT JOIN master_service ms ON ms.master_id = m.id
                 LEFT JOIN services s ON s.id = ms.service_id
                 GROUP BY m.id
-                ORDER BY m.last_name, m.first_name";
-        $result = $this->mysqli->query($sql);
+                ORDER BY m.{$sortColumn} {$sortDirection}";
+
+        $params = [];
+        $types = '';
+        if ($limit > 0) {
+            $sql .= " LIMIT ? OFFSET ?";
+            $params = [$limit, $offset];
+            $types = 'ii';
+        }
+
+        $stmt = $this->mysqli->prepare($sql);
+        if ($params) {
+            $stmt->bind_param($types, ...$params);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
 
         $rows = [];
         while ($row = $result->fetch_assoc()) {
@@ -47,8 +72,17 @@ class MasterContext
                 'services' => $row['services'] ?? '',
             ];
         }
+        $stmt->close();
 
         return $rows;
+    }
+
+    public function countAll(): int
+    {
+        $result = $this->mysqli->query("SELECT COUNT(*) AS cnt FROM masters");
+        $row = $result->fetch_assoc();
+
+        return (int)$row['cnt'];
     }
 
     public function getById(int $id): ?Master

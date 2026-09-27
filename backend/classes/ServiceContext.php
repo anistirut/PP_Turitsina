@@ -4,6 +4,8 @@ require_once __DIR__ . '/../models/Service.php';
 
 class ServiceContext
 {
+    public const SORTABLE_COLUMNS = ['name', 'duration_minutes', 'price'];
+
     private mysqli $mysqli;
 
     public function __construct(mysqli $mysqli)
@@ -11,18 +13,49 @@ class ServiceContext
         $this->mysqli = $mysqli;
     }
 
-    public function getAll(): array
-    {
-        $result = $this->mysqli->query(
-            "SELECT id, name, duration_minutes, price FROM services ORDER BY name"
-        );
+    public function getAll(
+        string $sortColumn = 'name',
+        string $sortDirection = 'ASC',
+        int $limit = 0,
+        int $offset = 0
+    ): array {
+        if (!in_array($sortColumn, self::SORTABLE_COLUMNS, true)) {
+            $sortColumn = 'name';
+        }
+        $sortDirection = strtoupper($sortDirection) === 'DESC' ? 'DESC' : 'ASC';
+
+        $sql = "SELECT id, name, duration_minutes, price FROM services ORDER BY {$sortColumn} {$sortDirection}";
+
+        $params = [];
+        $types = '';
+        if ($limit > 0) {
+            $sql .= " LIMIT ? OFFSET ?";
+            $params = [$limit, $offset];
+            $types = 'ii';
+        }
+
+        $stmt = $this->mysqli->prepare($sql);
+        if ($params) {
+            $stmt->bind_param($types, ...$params);
+        }
+        $stmt->execute();
+        $result = $stmt->get_result();
 
         $services = [];
         while ($row = $result->fetch_assoc()) {
             $services[] = $this->mapRow($row);
         }
+        $stmt->close();
 
         return $services;
+    }
+
+    public function countAll(): int
+    {
+        $result = $this->mysqli->query("SELECT COUNT(*) AS cnt FROM services");
+        $row = $result->fetch_assoc();
+
+        return (int)$row['cnt'];
     }
 
     public function getById(int $id): ?Service
