@@ -252,7 +252,7 @@ require_once __DIR__ . '/../elements/siteHeader.php';
         <h1>Записи</h1>
         <?php if ($action === 'list'): ?>
             <div class="header-actions">
-                <a class="btn btn-secondary" href="exportExcel.php?<?= h(http_build_query([
+                <a class="btn btn-secondary" id="export-link" href="exportExcel.php?<?= h(http_build_query([
                     'entity' => 'appointments',
                     'filter_client_id' => $filterClientId ?: null,
                     'filter_master_id' => $filterMasterId ?: null,
@@ -274,7 +274,7 @@ require_once __DIR__ . '/../elements/siteHeader.php';
 
     <?php if ($action === 'list' && $view === 'list'): ?>
 
-        <form class="filter-form" method="get" action="">
+        <form class="filter-form" method="get" action="" data-live-form>
             <label for="filter_client_id">Клиент</label>
             <select id="filter_client_id" name="filter_client_id">
                 <option value="">Все клиенты</option>
@@ -304,13 +304,9 @@ require_once __DIR__ . '/../elements/siteHeader.php';
                     </option>
                 <?php endforeach; ?>
             </select>
-
-            <button type="submit" class="btn btn-secondary">Показать</button>
-            <?php if ($filterClientId > 0 || $filterMasterId > 0 || $filterServiceId > 0): ?>
-                <a class="btn btn-secondary" href="appointments.php">Сбросить</a>
-            <?php endif; ?>
         </form>
 
+        <div id="live-results">
         <table>
             <thead>
                 <tr>
@@ -365,6 +361,7 @@ require_once __DIR__ . '/../elements/siteHeader.php';
         </table>
 
         <?php require __DIR__ . '/../elements/pagination.php'; ?>
+        </div>
 
     <?php elseif ($action === 'list' && $view === 'calendar'): ?>
 

@@ -50,28 +50,36 @@ require_once __DIR__ . '/../elements/siteHeader.php';
         <h1>Профиль</h1>
     </div>
 
-    <div class="entity-form">
-        <p><strong>Логин:</strong> <?= h($currentUser->login) ?></p>
+    <div class="profile-layout">
+        <section class="profile-card profile-account">
+            <h2>Учётная запись</h2>
+            <span class="profile-label">Логин</span>
+            <p class="profile-value"><?= h($currentUser->login) ?></p>
+        </section>
 
-        <?php if ($success): ?>
-            <div class="alert alert-success">Пароль успешно изменён.</div>
-        <?php endif; ?>
-        <?php foreach ($errors as $error): ?>
-            <div class="alert alert-error"><?= h($error) ?></div>
-        <?php endforeach; ?>
+        <section class="profile-card">
+            <h2>Смена пароля</h2>
 
-        <form method="post" action="profile.php">
-            <label for="current_password">Текущий пароль</label>
-            <input type="password" id="current_password" name="current_password" required>
+            <?php if ($success): ?>
+                <div class="alert alert-success">Пароль успешно изменён.</div>
+            <?php endif; ?>
+            <?php foreach ($errors as $error): ?>
+                <div class="alert alert-error"><?= h($error) ?></div>
+            <?php endforeach; ?>
 
-            <label for="new_password">Новый пароль</label>
-            <input type="password" id="new_password" name="new_password" required>
+            <form method="post" action="profile.php">
+                <label for="current_password">Текущий пароль</label>
+                <input type="password" id="current_password" name="current_password" autocomplete="current-password" required>
 
-            <label for="new_password_confirm">Повтор нового пароля</label>
-            <input type="password" id="new_password_confirm" name="new_password_confirm" required>
+                <label for="new_password">Новый пароль</label>
+                <input type="password" id="new_password" name="new_password" autocomplete="new-password" required>
 
-            <button type="submit" class="btn">Сменить пароль</button>
-        </form>
+                <label for="new_password_confirm">Повтор нового пароля</label>
+                <input type="password" id="new_password_confirm" name="new_password_confirm" autocomplete="new-password" required>
+
+                <button type="submit" class="btn">Сменить пароль</button>
+            </form>
+        </section>
     </div>
 </div>
 

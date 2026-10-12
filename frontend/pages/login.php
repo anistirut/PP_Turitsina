@@ -35,30 +35,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = 'Вход';
+$bodyClass = 'auth-page';
 require_once __DIR__ . '/../elements/head.php';
-require_once __DIR__ . '/../elements/siteHeader.php';
 ?>
 
-<main class="auth-main">
-    <div class="auth-box">
-        <h1>Вход в систему</h1>
+<div class="auth-layout">
+    <aside class="auth-visual">
+        <div class="auth-brand">
+            <span class="auth-brand-name">Turka</span>
+            <span class="auth-brand-sub">Салон красоты</span>
+        </div>
+    </aside>
 
-        <?php if ($error !== ''): ?>
-            <div class="alert alert-error"><?= h($error) ?></div>
-        <?php endif; ?>
+    <main class="auth-panel">
+        <div class="auth-form-wrap">
+            <h1>Вход</h1>
+            <p class="auth-lead">Введите данные учётной записи, чтобы продолжить работу.</p>
 
-        <form method="post" action="">
-            <label for="login">Логин</label>
-            <input type="text" id="login" name="login" value="<?= h($loginValue) ?>" autofocus required>
+            <?php if ($error !== ''): ?>
+                <div class="alert alert-error"><?= h($error) ?></div>
+            <?php endif; ?>
 
-            <label for="password">Пароль</label>
-            <input type="password" id="password" name="password" required>
+            <form method="post" action="">
+                <div class="auth-field">
+                    <label for="login">Логин</label>
+                    <input type="text" id="login" name="login" value="<?= h($loginValue) ?>" autocomplete="username" autofocus required>
+                </div>
 
-            <button type="submit">Войти</button>
-        </form>
+                <div class="auth-field">
+                    <label for="password">Пароль</label>
+                    <input type="password" id="password" name="password" autocomplete="current-password" required>
+                </div>
 
-        <p class="auth-hint">Нет учётной записи? <a href="register.php">Зарегистрироваться</a></p>
-    </div>
-</main>
+                <button type="submit" class="auth-submit">Войти</button>
+            </form>
+
+            <p class="auth-hint">Нет учётной записи? <a href="register.php">Зарегистрироваться</a></p>
+        </div>
+    </main>
+</div>
 
 <?php require_once __DIR__ . '/../elements/footer.php'; ?>

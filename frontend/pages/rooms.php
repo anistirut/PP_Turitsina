@@ -74,12 +74,14 @@ $dir = ($_GET['dir'] ?? '') === 'desc' ? 'desc' : 'asc';
 $perPage = 5;
 $page = max(1, (int)($_GET['page'] ?? 1));
 
-$totalRooms = ($action === 'list') ? $roomContext->countAll() : 0;
+$search = trim($_GET['search'] ?? '');
+
+$totalRooms = ($action === 'list') ? $roomContext->countAll($search) : 0;
 $totalPages = max(1, (int)ceil($totalRooms / $perPage));
 $page = min($page, $totalPages);
 $offset = ($page - 1) * $perPage;
 
-$rooms = ($action === 'list') ? $roomContext->getAll($sort, $dir, $perPage, $offset) : [];
+$rooms = ($action === 'list') ? $roomContext->getAll($search, $sort, $dir, $perPage, $offset) : [];
 
 $pageTitle = 'Кабинеты';
 $activePage = 'rooms';
@@ -100,6 +102,11 @@ require_once __DIR__ . '/../elements/siteHeader.php';
 
     <?php if ($action === 'list'): ?>
 
+        <form class="search-form" method="get" action="" data-live-form>
+            <input type="search" name="search" placeholder="Поиск по номеру или описанию" value="<?= h($search) ?>" autocomplete="off">
+        </form>
+
+        <div id="live-results">
         <table>
             <thead>
                 <tr>
@@ -130,6 +137,7 @@ require_once __DIR__ . '/../elements/siteHeader.php';
         </table>
 
         <?php require __DIR__ . '/../elements/pagination.php'; ?>
+        </div>
 
     <?php else: ?>
 

@@ -39,38 +39,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = 'Регистрация';
+$bodyClass = 'auth-page';
 require_once __DIR__ . '/../elements/head.php';
-require_once __DIR__ . '/../elements/siteHeader.php';
 ?>
 
-<main class="auth-main">
-    <div class="auth-box">
-        <h1>Регистрация</h1>
+<div class="auth-layout">
+    <aside class="auth-visual">
+        <div class="auth-brand">
+            <span class="auth-brand-name">Turka</span>
+            <span class="auth-brand-sub">Салон красоты</span>
+        </div>
+    </aside>
 
-        <?php if ($success): ?>
-            <div class="alert alert-success">Учётная запись создана. Теперь можно войти.</div>
-            <p class="auth-hint"><a href="login.php">Перейти ко входу</a></p>
-        <?php else: ?>
-            <?php if ($error !== ''): ?>
-                <div class="alert alert-error"><?= h($error) ?></div>
+    <main class="auth-panel">
+        <div class="auth-form-wrap">
+            <h1>Регистрация</h1>
+
+            <?php if ($success): ?>
+                <p class="auth-lead">Учётная запись создана.</p>
+                <div class="alert alert-success">Теперь можно войти в систему.</div>
+                <p class="auth-hint"><a href="login.php">Перейти ко входу</a></p>
+            <?php else: ?>
+                <p class="auth-lead">Создайте учётную запись для работы в системе.</p>
+
+                <?php if ($error !== ''): ?>
+                    <div class="alert alert-error"><?= h($error) ?></div>
+                <?php endif; ?>
+
+                <form method="post" action="">
+                    <div class="auth-field">
+                        <label for="login">Логин</label>
+                        <input type="text" id="login" name="login" value="<?= h($loginValue) ?>" autocomplete="username" autofocus required>
+                    </div>
+
+                    <div class="auth-field">
+                        <label for="password">Пароль</label>
+                        <input type="password" id="password" name="password" autocomplete="new-password" required>
+                    </div>
+
+                    <div class="auth-field">
+                        <label for="password_confirm">Повтор пароля</label>
+                        <input type="password" id="password_confirm" name="password_confirm" autocomplete="new-password" required>
+                    </div>
+
+                    <button type="submit" class="auth-submit">Зарегистрироваться</button>
+                </form>
+
+                <p class="auth-hint">Уже есть учётная запись? <a href="login.php">Войти</a></p>
             <?php endif; ?>
-
-            <form method="post" action="">
-                <label for="login">Логин</label>
-                <input type="text" id="login" name="login" value="<?= h($loginValue) ?>" autofocus required>
-
-                <label for="password">Пароль</label>
-                <input type="password" id="password" name="password" required>
-
-                <label for="password_confirm">Повтор пароля</label>
-                <input type="password" id="password_confirm" name="password_confirm" required>
-
-                <button type="submit">Зарегистрироваться</button>
-            </form>
-
-            <p class="auth-hint">Уже есть учётная запись? <a href="login.php">Войти</a></p>
-        <?php endif; ?>
-    </div>
-</main>
+        </div>
+    </main>
+</div>
 
 <?php require_once __DIR__ . '/../elements/footer.php'; ?>

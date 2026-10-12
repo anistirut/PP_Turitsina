@@ -81,12 +81,14 @@ $dir = ($_GET['dir'] ?? '') === 'desc' ? 'desc' : 'asc';
 $perPage = 5;
 $page = max(1, (int)($_GET['page'] ?? 1));
 
-$totalServices = ($action === 'list') ? $serviceContext->countAll() : 0;
+$search = trim($_GET['search'] ?? '');
+
+$totalServices = ($action === 'list') ? $serviceContext->countAll($search) : 0;
 $totalPages = max(1, (int)ceil($totalServices / $perPage));
 $page = min($page, $totalPages);
 $offset = ($page - 1) * $perPage;
 
-$services = ($action === 'list') ? $serviceContext->getAll($sort, $dir, $perPage, $offset) : [];
+$services = ($action === 'list') ? $serviceContext->getAll($search, $sort, $dir, $perPage, $offset) : [];
 
 $pageTitle = 'Услуги';
 $activePage = 'services';
@@ -107,6 +109,11 @@ require_once __DIR__ . '/../elements/siteHeader.php';
 
     <?php if ($action === 'list'): ?>
 
+        <form class="search-form" method="get" action="" data-live-form>
+            <input type="search" name="search" placeholder="Поиск по названию" value="<?= h($search) ?>" autocomplete="off">
+        </form>
+
+        <div id="live-results">
         <table>
             <thead>
                 <tr>
@@ -139,6 +146,7 @@ require_once __DIR__ . '/../elements/siteHeader.php';
         </table>
 
         <?php require __DIR__ . '/../elements/pagination.php'; ?>
+        </div>
 
     <?php else: ?>
 

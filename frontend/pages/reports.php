@@ -209,13 +209,9 @@ require_once __DIR__ . '/../elements/siteHeader.php';
         <form class="filter-form" method="get" action="">
             <input type="hidden" name="type" value="services_popularity">
             <label for="date_from">С</label>
-            <input type="date" id="date_from" name="date_from" value="<?= h($dateFrom) ?>">
+            <input type="date" id="date_from" name="date_from" value="<?= h($dateFrom) ?>" onchange="this.form.submit()">
             <label for="date_to">По</label>
-            <input type="date" id="date_to" name="date_to" value="<?= h($dateTo) ?>">
-            <button type="submit" class="btn btn-secondary">Показать</button>
-            <?php if ($dateFrom !== '' || $dateTo !== ''): ?>
-                <a class="btn btn-secondary" href="reports.php?type=services_popularity">Сбросить</a>
-            <?php endif; ?>
+            <input type="date" id="date_to" name="date_to" value="<?= h($dateTo) ?>" onchange="this.form.submit()">
         </form>
 
         <table>

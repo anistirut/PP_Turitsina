@@ -14,6 +14,7 @@ class RoomContext
     }
 
     public function getAll(
+        string $search = '',
         string $sortColumn = 'number',
         string $sortDirection = 'ASC',
         int $limit = 0,
@@ -24,14 +25,24 @@ class RoomContext
         }
         $sortDirection = strtoupper($sortDirection) === 'DESC' ? 'DESC' : 'ASC';
 
-        $sql = "SELECT id, number, description FROM rooms ORDER BY {$sortColumn} {$sortDirection}";
-
+        $sql = "SELECT id, number, description FROM rooms";
         $params = [];
         $types = '';
+
+        if ($search !== '') {
+            $sql .= " WHERE number LIKE CONCAT('%', ?, '%') OR description LIKE CONCAT('%', ?, '%')";
+            $params[] = $search;
+            $params[] = $search;
+            $types .= 'ss';
+        }
+
+        $sql .= " ORDER BY {$sortColumn} {$sortDirection}";
+
         if ($limit > 0) {
             $sql .= " LIMIT ? OFFSET ?";
-            $params = [$limit, $offset];
-            $types = 'ii';
+            $params[] = $limit;
+            $params[] = $offset;
+            $types .= 'ii';
         }
 
         $stmt = $this->mysqli->prepare($sql);
@@ -50,10 +61,24 @@ class RoomContext
         return $rooms;
     }
 
-    public function countAll(): int
+    public function countAll(string $search = ''): int
     {
-        $result = $this->mysqli->query("SELECT COUNT(*) AS cnt FROM rooms");
-        $row = $result->fetch_assoc();
+        $sql = "SELECT COUNT(*) AS cnt FROM rooms";
+        $params = [];
+
+        if ($search !== '') {
+            $sql .= " WHERE number LIKE CONCAT('%', ?, '%') OR description LIKE CONCAT('%', ?, '%')";
+            $params[] = $search;
+            $params[] = $search;
+        }
+
+        $stmt = $this->mysqli->prepare($sql);
+        if ($params) {
+            $stmt->bind_param('ss', ...$params);
+        }
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
 
         return (int)$row['cnt'];
     }

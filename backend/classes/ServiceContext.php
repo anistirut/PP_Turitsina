@@ -14,6 +14,7 @@ class ServiceContext
     }
 
     public function getAll(
+        string $search = '',
         string $sortColumn = 'name',
         string $sortDirection = 'ASC',
         int $limit = 0,
@@ -24,14 +25,23 @@ class ServiceContext
         }
         $sortDirection = strtoupper($sortDirection) === 'DESC' ? 'DESC' : 'ASC';
 
-        $sql = "SELECT id, name, duration_minutes, price FROM services ORDER BY {$sortColumn} {$sortDirection}";
-
+        $sql = "SELECT id, name, duration_minutes, price FROM services";
         $params = [];
         $types = '';
+
+        if ($search !== '') {
+            $sql .= " WHERE name LIKE CONCAT('%', ?, '%')";
+            $params[] = $search;
+            $types .= 's';
+        }
+
+        $sql .= " ORDER BY {$sortColumn} {$sortDirection}";
+
         if ($limit > 0) {
             $sql .= " LIMIT ? OFFSET ?";
-            $params = [$limit, $offset];
-            $types = 'ii';
+            $params[] = $limit;
+            $params[] = $offset;
+            $types .= 'ii';
         }
 
         $stmt = $this->mysqli->prepare($sql);
@@ -50,10 +60,23 @@ class ServiceContext
         return $services;
     }
 
-    public function countAll(): int
+    public function countAll(string $search = ''): int
     {
-        $result = $this->mysqli->query("SELECT COUNT(*) AS cnt FROM services");
-        $row = $result->fetch_assoc();
+        $sql = "SELECT COUNT(*) AS cnt FROM services";
+        $params = [];
+
+        if ($search !== '') {
+            $sql .= " WHERE name LIKE CONCAT('%', ?, '%')";
+            $params[] = $search;
+        }
+
+        $stmt = $this->mysqli->prepare($sql);
+        if ($params) {
+            $stmt->bind_param('s', ...$params);
+        }
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
 
         return (int)$row['cnt'];
     }

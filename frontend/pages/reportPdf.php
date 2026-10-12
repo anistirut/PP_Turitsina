@@ -87,35 +87,76 @@ if ($type === 'masters_services') {
     }
 }
 
-$html = '<html><head><meta charset="UTF-8"><style>
-    body { font-family: "DejaVu Sans", sans-serif; font-size: 12px; color: #262626; }
-    h1 { font-size: 16px; margin: 0 0 4px; }
-    .subtitle { font-size: 12px; color: #555; margin-bottom: 14px; }
+$e = static fn(string $value): string => htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+
+$numericLast = in_array($type, ['masters_count', 'services_popularity'], true);
+$statusClasses = [
+    'Запланировано' => 'st-planned',
+    'Завершено' => 'st-done',
+    'Отменено' => 'st-cancelled',
+];
+
+$css = '
+    @page { margin: 0; }
+    body { margin: 0; font-family: "DejaVu Sans", sans-serif; font-size: 10.5px; color: #231820; }
+    .band { background-color: #32222d; padding: 22px 48px 18px; border-bottom: 3px solid #b08d57; }
+    .brand { font-family: "DejaVu Serif", serif; font-size: 22px; letter-spacing: 1px; color: #f7f3ee; }
+    .brand-sub { font-size: 8px; letter-spacing: 2.5px; text-transform: uppercase; color: #b08d57; margin-top: 4px; }
+    .content { padding: 30px 48px 60px; }
+    .kicker { font-size: 8.5px; letter-spacing: 2.5px; text-transform: uppercase; color: #8d6c3a; }
+    h1 { font-family: "DejaVu Serif", serif; font-size: 22px; font-weight: normal; color: #32222d; margin: 6px 0 8px; }
+    .subtitle { font-size: 11px; color: #6f635e; margin-bottom: 4px; }
+    .meta { font-size: 9px; color: #6f635e; margin-bottom: 22px; padding-bottom: 14px; border-bottom: 1px solid #e3dad1; }
     table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid #999; padding: 5px 8px; text-align: left; }
-    th { background-color: #eee; }
-</style></head><body>';
-$html .= '<h1>Отчёт: ' . htmlspecialchars($reportTitles[$type], ENT_QUOTES, 'UTF-8') . '</h1>';
+    th { background-color: #efe8e0; color: #32222d; font-size: 8px; letter-spacing: 1.2px; text-transform: uppercase;
+         text-align: left; padding: 9px 10px; border-bottom: 1px solid #bdb0a5; }
+    td { padding: 9px 10px; border-bottom: 1px solid #e3dad1; vertical-align: top; }
+    tr.alt td { background-color: #faf7f3; }
+    .num { text-align: right; width: 90px; }
+    td.empty { text-align: center; color: #6f635e; padding: 22px 10px; }
+    .st-planned { color: #8d6c3a; }
+    .st-done { color: #2f5d3a; }
+    .st-cancelled { color: #8f2d2d; }
+';
+
+$html = '<html><head><meta charset="UTF-8"><style>' . $css . '</style></head><body>';
+$html .= '<div class="band"><div class="brand">Turka</div><div class="brand-sub">Салон красоты</div></div>';
+$html .= '<div class="content">';
+$html .= '<div class="kicker">Отчёт</div>';
+$html .= '<h1>' . $e($reportTitles[$type]) . '</h1>';
 if ($subtitle !== '') {
-    $html .= '<div class="subtitle">' . htmlspecialchars($subtitle, ENT_QUOTES, 'UTF-8') . '</div>';
+    $html .= '<div class="subtitle">' . $e($subtitle) . '</div>';
 }
+$html .= '<div class="meta">Сформирован: ' . date('d.m.Y H:i') . ' &nbsp;&middot;&nbsp; Строк: ' . count($rows) . '</div>';
+
 $html .= '<table><thead><tr>';
-foreach ($columns as $column) {
-    $html .= '<th>' . htmlspecialchars($column, ENT_QUOTES, 'UTF-8') . '</th>';
+foreach ($columns as $index => $column) {
+    $class = ($numericLast && $index === count($columns) - 1) ? ' class="num"' : '';
+    $html .= '<th' . $class . '>' . $e($column) . '</th>';
 }
 $html .= '</tr></thead><tbody>';
 
 if (!$rows) {
-    $html .= '<tr><td colspan="' . count($columns) . '">Данные не найдены.</td></tr>';
+    $html .= '<tr><td class="empty" colspan="' . count($columns) . '">Данные не найдены.</td></tr>';
 }
-foreach ($rows as $row) {
-    $html .= '<tr>';
-    foreach ($row as $cell) {
-        $html .= '<td>' . htmlspecialchars((string)$cell, ENT_QUOTES, 'UTF-8') . '</td>';
+foreach ($rows as $rowIndex => $row) {
+    $html .= '<tr' . ($rowIndex % 2 === 1 ? ' class="alt"' : '') . '>';
+    $lastIndex = count($row) - 1;
+    foreach ($row as $cellIndex => $cell) {
+        $cell = (string)$cell;
+        $classes = [];
+        if ($numericLast && $cellIndex === $lastIndex) {
+            $classes[] = 'num';
+        }
+        if (isset($statusClasses[$cell])) {
+            $classes[] = $statusClasses[$cell];
+        }
+        $class = $classes ? ' class="' . implode(' ', $classes) . '"' : '';
+        $html .= '<td' . $class . '>' . $e($cell) . '</td>';
     }
     $html .= '</tr>';
 }
-$html .= '</tbody></table></body></html>';
+$html .= '</tbody></table></div></body></html>';
 
 $options = new \Dompdf\Options();
 $options->set('defaultFont', 'DejaVu Sans');
@@ -125,4 +166,10 @@ $dompdf = new \Dompdf\Dompdf($options);
 $dompdf->loadHtml($html);
 $dompdf->setPaper('A4', 'portrait');
 $dompdf->render();
+
+$canvas = $dompdf->getCanvas();
+$footerFont = $dompdf->getFontMetrics()->getFont('DejaVu Sans');
+$canvas->page_text(36, $canvas->get_height() - 32, 'Салон красоты Turka', $footerFont, 8, [0.44, 0.39, 0.37]);
+$canvas->page_text($canvas->get_width() - 112, $canvas->get_height() - 32, 'Страница {PAGE_NUM} из {PAGE_COUNT}', $footerFont, 8, [0.44, 0.39, 0.37]);
+
 $dompdf->stream('report_' . $type . '.pdf', ['Attachment' => true]);

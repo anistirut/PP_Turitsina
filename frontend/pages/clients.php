@@ -111,14 +111,11 @@ require_once __DIR__ . '/../elements/siteHeader.php';
 
     <?php if ($action === 'list'): ?>
 
-        <form class="search-form" method="get" action="">
-            <input type="text" name="search" placeholder="Поиск по фамилии" value="<?= h($search) ?>">
-            <button type="submit" class="btn btn-secondary">Найти</button>
-            <?php if ($search !== ''): ?>
-                <a class="btn btn-secondary" href="clients.php">Сбросить</a>
-            <?php endif; ?>
+        <form class="search-form" method="get" action="" data-live-form>
+            <input type="search" name="search" placeholder="Поиск по фамилии" value="<?= h($search) ?>" autocomplete="off">
         </form>
 
+        <div id="live-results">
         <table>
             <thead>
                 <tr>
@@ -153,6 +150,7 @@ require_once __DIR__ . '/../elements/siteHeader.php';
         </table>
 
         <?php require __DIR__ . '/../elements/pagination.php'; ?>
+        </div>
 
     <?php else: ?>
 
