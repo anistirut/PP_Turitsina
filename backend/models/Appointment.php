@@ -1,5 +1,6 @@
 <?php
 
+// Запись клиента к мастеру (таблица appointments).
 class Appointment
 {
     public int $id;

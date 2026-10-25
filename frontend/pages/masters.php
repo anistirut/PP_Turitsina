@@ -1,5 +1,8 @@
 <?php
 
+// Страница «Мастера»: список, добавление, изменение, удаление и выбор услуг, которые оказывает мастер.
+
+// Подключаем сессию, БД и нужные классы. Гостей requireAuth() отправляет на вход.
 session_start();
 
 require_once __DIR__ . '/../../backend/functions/connectionDB.php';
@@ -12,12 +15,14 @@ requireAuth();
 $masterContext = new MasterContext($mysqli);
 $serviceContext = new ServiceContext($mysqli);
 
+// action: list - таблица, add - форма добавления, edit - форма изменения.
 $action = $_GET['action'] ?? 'list';
 $id = (int)($_GET['id'] ?? 0);
 $errors = [];
 $formData = ['last_name' => '', 'first_name' => '', 'phone' => '', 'hire_date' => ''];
 $selectedServiceIds = [];
 
+// Удаление: форму с кнопкой «Удалить» отправляет таблица.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete') {
     $deleteId = (int)($_POST['id'] ?? 0);
     $masterContext->delete($deleteId);
@@ -25,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
     exit;
 }
 
+// Сохранение формы: сначала проверяем поля, потом create или update.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save') {
     $id = (int)($_POST['id'] ?? 0);
     $formData = [
@@ -56,10 +62,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save'
                 $id = $masterContext->create($formData['last_name'], $formData['first_name'], $formData['phone'], $formData['hire_date']);
             }
 
+            // Список услуг мастера (флажки в форме) каждый раз записываем заново целиком.
             $masterContext->setServices($id, $selectedServiceIds);
 
             header('Location: masters.php');
             exit;
+        // Код 1062 - нарушена уникальность (мастер с таким телефоном уже есть).
         } catch (mysqli_sql_exception $e) {
             $errors[] = $e->getCode() === 1062
                 ? 'Мастер с таким телефоном уже существует.'
@@ -70,6 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save'
     $action = $id > 0 ? 'edit' : 'add';
 }
 
+// Открыли форму изменения - подставляем в неё текущие данные.
 if ($action === 'edit' && $id > 0 && !$errors) {
     $master = $masterContext->getById($id);
 
@@ -87,13 +96,16 @@ if ($action === 'edit' && $id > 0 && !$errors) {
     $selectedServiceIds = $masterContext->getServiceIds($id);
 }
 
+// Все услуги - для флажков в форме мастера.
 $allServices = $serviceContext->getAll();
 
+// Параметры списка: сортировка (только из разрешённых столбцов), номер страницы.
 $sort = in_array($_GET['sort'] ?? '', MasterContext::SORTABLE_COLUMNS, true) ? $_GET['sort'] : 'last_name';
 $dir = ($_GET['dir'] ?? '') === 'desc' ? 'desc' : 'asc';
 $perPage = 5;
 $page = max(1, (int)($_GET['page'] ?? 1));
 
+// Всего мастеров считаем отдельно, чтобы знать число страниц; текущую страницу не даём выйти за их пределы.
 $totalMasters = ($action === 'list') ? $masterContext->countAll() : 0;
 $totalPages = max(1, (int)ceil($totalMasters / $perPage));
 $page = min($page, $totalPages);
@@ -101,6 +113,7 @@ $offset = ($page - 1) * $perPage;
 
 $mastersWithServices = ($action === 'list') ? $masterContext->getAllWithServices($sort, $dir, $perPage, $offset) : [];
 
+// Данные готовы - подключаем шапку и выводим страницу.
 $pageTitle = 'Мастера';
 $activePage = 'masters';
 require_once __DIR__ . '/../elements/head.php';

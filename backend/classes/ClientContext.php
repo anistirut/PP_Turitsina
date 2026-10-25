@@ -2,8 +2,10 @@
 
 require_once __DIR__ . '/../models/Client.php';
 
+// Работа с таблицей clients: список с поиском, добавление, изменение, удаление.
 class ClientContext
 {
+    // По этим столбцам можно сортировать. Имя столбца в ORDER BY нельзя передать параметром, поэтому проверяем по списку.
     public const SORTABLE_COLUMNS = ['last_name', 'first_name', 'phone', 'birth_date'];
 
     private mysqli $mysqli;
@@ -13,6 +15,7 @@ class ClientContext
         $this->mysqli = $mysqli;
     }
 
+    // Список клиентов. $search - часть фамилии, $limit = 0 значит «без ограничения».
     public function getAll(
         string $search = '',
         string $sortColumn = 'last_name',
@@ -60,6 +63,7 @@ class ClientContext
         return $clients;
     }
 
+    // Сколько клиентов подходит под поиск (нужно, чтобы посчитать страницы).
     public function countAll(string $search = ''): int
     {
         $sql = "SELECT COUNT(*) AS cnt FROM clients";
@@ -81,6 +85,7 @@ class ClientContext
         return (int)$row['cnt'];
     }
 
+    // Один клиент по id или null.
     public function getById(int $id): ?Client
     {
         $stmt = $this->mysqli->prepare(
@@ -94,6 +99,7 @@ class ClientContext
         return $row ? $this->mapRow($row) : null;
     }
 
+    // Добавляет клиента, возвращает его id.
     public function create(string $lastName, string $firstName, string $phone, ?string $birthDate): int
     {
         $stmt = $this->mysqli->prepare(
@@ -107,6 +113,7 @@ class ClientContext
         return $id;
     }
 
+    // Меняет данные клиента.
     public function update(int $id, string $lastName, string $firstName, string $phone, ?string $birthDate): bool
     {
         $stmt = $this->mysqli->prepare(
@@ -119,6 +126,7 @@ class ClientContext
         return $success;
     }
 
+    // Удаляет клиента.
     public function delete(int $id): bool
     {
         $stmt = $this->mysqli->prepare("DELETE FROM clients WHERE id = ?");
@@ -129,6 +137,7 @@ class ClientContext
         return $success;
     }
 
+    // Строка из БД -> объект Client.
     private function mapRow(array $row): Client
     {
         return new Client(

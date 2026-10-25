@@ -1,5 +1,8 @@
 <?php
 
+// Страница «Услуги»: список с поиском, добавление, изменение, удаление.
+
+// Подключаем сессию, БД и нужные классы. Гостей requireAuth() отправляет на вход.
 session_start();
 
 require_once __DIR__ . '/../../backend/functions/connectionDB.php';
@@ -10,11 +13,13 @@ requireAuth();
 
 $serviceContext = new ServiceContext($mysqli);
 
+// action: list - таблица, add - форма добавления, edit - форма изменения.
 $action = $_GET['action'] ?? 'list';
 $id = (int)($_GET['id'] ?? 0);
 $errors = [];
 $formData = ['name' => '', 'duration_minutes' => '', 'price' => ''];
 
+// Удаление: форму с кнопкой «Удалить» отправляет таблица.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete') {
     $deleteId = (int)($_POST['id'] ?? 0);
     $serviceContext->delete($deleteId);
@@ -22,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
     exit;
 }
 
+// Сохранение формы: сначала проверяем поля, потом create или update.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save') {
     $id = (int)($_POST['id'] ?? 0);
     $formData = [
@@ -61,6 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save'
     $action = $id > 0 ? 'edit' : 'add';
 }
 
+// Открыли форму изменения - подставляем в неё текущие данные.
 if ($action === 'edit' && $id > 0 && !$errors) {
     $service = $serviceContext->getById($id);
 
@@ -76,13 +83,16 @@ if ($action === 'edit' && $id > 0 && !$errors) {
     ];
 }
 
+// Параметры списка: сортировка (только из разрешённых столбцов), номер страницы.
 $sort = in_array($_GET['sort'] ?? '', ServiceContext::SORTABLE_COLUMNS, true) ? $_GET['sort'] : 'name';
 $dir = ($_GET['dir'] ?? '') === 'desc' ? 'desc' : 'asc';
 $perPage = 5;
 $page = max(1, (int)($_GET['page'] ?? 1));
 
+// Поиск - по названию услуги.
 $search = trim($_GET['search'] ?? '');
 
+// Всего услуг считаем отдельно, чтобы знать число страниц; текущую страницу не даём выйти за их пределы.
 $totalServices = ($action === 'list') ? $serviceContext->countAll($search) : 0;
 $totalPages = max(1, (int)ceil($totalServices / $perPage));
 $page = min($page, $totalPages);
@@ -90,6 +100,7 @@ $offset = ($page - 1) * $perPage;
 
 $services = ($action === 'list') ? $serviceContext->getAll($search, $sort, $dir, $perPage, $offset) : [];
 
+// Данные готовы - подключаем шапку и выводим страницу.
 $pageTitle = 'Услуги';
 $activePage = 'services';
 require_once __DIR__ . '/../elements/head.php';

@@ -1,5 +1,8 @@
 <?php
 
+// Страница «Отчёты»: пять отчётов, переключаются вкладками (?type=...).
+
+// Подключаем сессию, БД и нужные классы. Гостей requireAuth() отправляет на вход.
 session_start();
 
 require_once __DIR__ . '/../../backend/functions/connectionDB.php';
@@ -14,6 +17,7 @@ $reportContext = new ReportContext($mysqli);
 $masterContext = new MasterContext($mysqli);
 $clientContext = new ClientContext($mysqli);
 
+// Типы отчётов: ключ из адреса => название на вкладке.
 $reportTypes = [
     'masters_services' => 'Мастера и услуги',
     'master_schedule' => 'Расписание мастера',
@@ -22,11 +26,13 @@ $reportTypes = [
     'services_popularity' => 'Популярность услуг',
 ];
 
+// Неизвестный тип заменяем отчётом по умолчанию.
 $type = $_GET['type'] ?? 'masters_services';
 if (!array_key_exists($type, $reportTypes)) {
     $type = 'masters_services';
 }
 
+// Списки для выбора мастера и клиента.
 $masters = $masterContext->getAll();
 $clients = $clientContext->getAll();
 
@@ -35,6 +41,7 @@ $clientId = (int)($_GET['client_id'] ?? 0);
 $dateFrom = trim($_GET['date_from'] ?? '');
 $dateTo = trim($_GET['date_to'] ?? '');
 
+// Данные запрашиваем только для выбранного отчёта, остальные массивы остаются пустыми.
 $mastersWithServices = [];
 $masterSchedule = [];
 $clientHistory = [];
@@ -53,8 +60,10 @@ if ($type === 'masters_services') {
     $servicePopularity = $reportContext->servicePopularity($dateFrom !== '' ? $dateFrom : null, $dateTo !== '' ? $dateTo : null);
 }
 
+// Пока в отчёте не выбран мастер или клиент, скачивать в PDF нечего.
 $canExportPdf = !(($type === 'master_schedule' && $masterId <= 0) || ($type === 'client_history' && $clientId <= 0));
 
+// Данные готовы - подключаем шапку и выводим страницу.
 $pageTitle = 'Отчёты';
 $activePage = 'reports';
 require_once __DIR__ . '/../elements/head.php';

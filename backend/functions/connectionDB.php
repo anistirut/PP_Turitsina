@@ -1,5 +1,6 @@
 <?php
 
+// Подключение к БД. Переменную $mysqli используют все страницы.
 try {
     $mysqli = new mysqli('localhost', 'root', '', 'beauty_salon');
 } catch (mysqli_sql_exception $e) {

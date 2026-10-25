@@ -1,5 +1,6 @@
 <?php
 
+// Кабинет (таблица rooms).
 class Room
 {
     public int $id;

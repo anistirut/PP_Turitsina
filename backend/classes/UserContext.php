@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../models/User.php';
 
+// Работа с таблицей users.
 class UserContext
 {
     private mysqli $mysqli;
@@ -11,6 +12,7 @@ class UserContext
         $this->mysqli = $mysqli;
     }
 
+    // Ищет пользователя по логину (нужно при входе и регистрации). Нет такого - null.
     public function findByLogin(string $login): ?User
     {
         $stmt = $this->mysqli->prepare("SELECT id, login, password FROM users WHERE login = ?");
@@ -26,6 +28,7 @@ class UserContext
         return new User((int)$row['id'], $row['login'], $row['password']);
     }
 
+    // Добавляет пользователя, пароль приходит уже в виде хеша.
     public function create(string $login, string $passwordHash): int
     {
         $stmt = $this->mysqli->prepare("INSERT INTO users (login, password) VALUES (?, ?)");
@@ -37,6 +40,7 @@ class UserContext
         return $id;
     }
 
+    // Пользователь по id или null.
     public function getById(int $id): ?User
     {
         $stmt = $this->mysqli->prepare("SELECT id, login, password FROM users WHERE id = ?");
@@ -52,6 +56,7 @@ class UserContext
         return new User((int)$row['id'], $row['login'], $row['password']);
     }
 
+    // Записывает новый хеш пароля.
     public function updatePassword(int $id, string $passwordHash): bool
     {
         $stmt = $this->mysqli->prepare("UPDATE users SET password = ? WHERE id = ?");

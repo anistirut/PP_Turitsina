@@ -2,8 +2,10 @@
 
 require_once __DIR__ . '/../models/Service.php';
 
+// Работа с таблицей services: список с поиском, добавление, изменение, удаление.
 class ServiceContext
 {
+    // По этим столбцам можно сортировать. Имя столбца в ORDER BY нельзя передать параметром, поэтому проверяем по списку.
     public const SORTABLE_COLUMNS = ['name', 'duration_minutes', 'price'];
 
     private mysqli $mysqli;
@@ -13,6 +15,7 @@ class ServiceContext
         $this->mysqli = $mysqli;
     }
 
+    // Список услуг. $search - часть названия, $limit = 0 значит «без ограничения».
     public function getAll(
         string $search = '',
         string $sortColumn = 'name',
@@ -60,6 +63,7 @@ class ServiceContext
         return $services;
     }
 
+    // Сколько услуг подходит под поиск (нужно, чтобы посчитать страницы).
     public function countAll(string $search = ''): int
     {
         $sql = "SELECT COUNT(*) AS cnt FROM services";
@@ -81,6 +85,7 @@ class ServiceContext
         return (int)$row['cnt'];
     }
 
+    // Одна услуга по id или null.
     public function getById(int $id): ?Service
     {
         $stmt = $this->mysqli->prepare(
@@ -94,6 +99,7 @@ class ServiceContext
         return $row ? $this->mapRow($row) : null;
     }
 
+    // Добавляет услугу, возвращает её id.
     public function create(string $name, int $durationMinutes, float $price): int
     {
         $stmt = $this->mysqli->prepare(
@@ -107,6 +113,7 @@ class ServiceContext
         return $id;
     }
 
+    // Меняет данные услуги.
     public function update(int $id, string $name, int $durationMinutes, float $price): bool
     {
         $stmt = $this->mysqli->prepare(
@@ -119,6 +126,7 @@ class ServiceContext
         return $success;
     }
 
+    // Удаляет услугу.
     public function delete(int $id): bool
     {
         $stmt = $this->mysqli->prepare("DELETE FROM services WHERE id = ?");
@@ -129,6 +137,7 @@ class ServiceContext
         return $success;
     }
 
+    // Строка из БД -> объект Service.
     private function mapRow(array $row): Service
     {
         return new Service(

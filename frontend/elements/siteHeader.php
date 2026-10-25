@@ -1,3 +1,4 @@
+<?php // Шапка сайта с навигацией. Раздел из $activePage подсвечивается как текущий. ?>
 <?php $activePage = $activePage ?? ''; ?>
 <header class="site-header">
     <div class="site-header-inner">

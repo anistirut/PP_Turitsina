@@ -1,5 +1,6 @@
 <?php
 
+// Связь «мастер - услуга» (таблица master_service).
 class MasterService
 {
     public int $master_id;

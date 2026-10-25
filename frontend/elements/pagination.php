@@ -1,3 +1,4 @@
+<?php // Номера страниц под таблицей. Ждёт переменные $page и $totalPages; ссылки сохраняют поиск и сортировку. ?>
 <?php if ($totalPages > 1): ?>
     <div class="pagination">
         <?php if ($page > 1): ?>

@@ -1,5 +1,6 @@
 <?php
 
+// Мастер (таблица masters).
 class Master
 {
     public int $id;

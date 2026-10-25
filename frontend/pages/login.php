@@ -1,11 +1,15 @@
 <?php
 
+// Страница входа.
+
+// Подключаем сессию, БД и нужные классы.
 session_start();
 
 require_once __DIR__ . '/../../backend/functions/connectionDB.php';
 require_once __DIR__ . '/../../backend/functions/session.php';
 require_once __DIR__ . '/../../backend/classes/UserContext.php';
 
+// Уже вошедшему форма входа не нужна.
 if (isLoggedIn()) {
     header('Location: clients.php');
     exit;
@@ -14,6 +18,7 @@ if (isLoggedIn()) {
 $error = '';
 $loginValue = '';
 
+// Проверка логина и пароля. В БД хранится хеш, поэтому сравниваем через password_verify().
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $loginValue = trim($_POST['login'] ?? '');
     $password = $_POST['password'] ?? '';
@@ -35,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = 'Вход';
+// Класс у body включает отдельную вёрстку страниц входа (без шапки сайта).
 $bodyClass = 'auth-page';
 require_once __DIR__ . '/../elements/head.php';
 ?>

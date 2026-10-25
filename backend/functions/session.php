@@ -2,16 +2,19 @@
 
 require_once __DIR__ . '/../models/User.php';
 
+// Экранирует текст перед выводом в HTML.
 function h(?string $value): string
 {
     return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 }
 
+// После входа в сессии лежит $_SESSION['user'], по нему и узнаём, что пользователь вошёл.
 function isLoggedIn(): bool
 {
     return isset($_SESSION['user']);
 }
 
+// Закрывает страницу от гостей: отправляет на форму входа.
 function requireAuth(): void
 {
     if (!isLoggedIn()) {
@@ -20,6 +23,7 @@ function requireAuth(): void
     }
 }
 
+// Запоминает пользователя в сессии. Пароль не сохраняем.
 function loginUser(User $user): void
 {
     $_SESSION['user'] = [
@@ -28,6 +32,7 @@ function loginUser(User $user): void
     ];
 }
 
+// Выход: очищаем и уничтожаем сессию.
 function logoutUser(): void
 {
     $_SESSION = [];

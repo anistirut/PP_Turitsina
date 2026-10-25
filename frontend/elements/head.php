@@ -1,3 +1,4 @@
+<?php // Начало любой страницы: шрифты и стили. До подключения страница задаёт $pageTitle и, если нужно, $bodyClass. ?>
 <?php if (!isset($pageTitle)) { $pageTitle = 'Салон красоты'; } ?>
 <!DOCTYPE html>
 <html lang="ru">

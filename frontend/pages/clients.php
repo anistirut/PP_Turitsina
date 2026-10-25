@@ -1,5 +1,8 @@
 <?php
 
+// Страница «Клиенты»: список с поиском, добавление, изменение, удаление.
+
+// Подключаем сессию, БД и нужные классы. Гостей requireAuth() отправляет на вход.
 session_start();
 
 require_once __DIR__ . '/../../backend/functions/connectionDB.php';
@@ -10,11 +13,13 @@ requireAuth();
 
 $clientContext = new ClientContext($mysqli);
 
+// action: list - таблица, add - форма добавления, edit - форма изменения.
 $action = $_GET['action'] ?? 'list';
 $id = (int)($_GET['id'] ?? 0);
 $errors = [];
 $formData = ['last_name' => '', 'first_name' => '', 'phone' => '', 'birth_date' => ''];
 
+// Удаление: форму с кнопкой «Удалить» отправляет таблица.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete') {
     $deleteId = (int)($_POST['id'] ?? 0);
     $clientContext->delete($deleteId);
@@ -22,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
     exit;
 }
 
+// Сохранение формы: сначала проверяем поля, потом create или update.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save') {
     $id = (int)($_POST['id'] ?? 0);
     $formData = [
@@ -53,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save'
 
             header('Location: clients.php');
             exit;
+        // Код 1062 - нарушена уникальность (клиент с таким телефоном уже есть).
         } catch (mysqli_sql_exception $e) {
             $errors[] = $e->getCode() === 1062
                 ? 'Клиент с таким телефоном уже существует.'
@@ -63,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save'
     $action = $id > 0 ? 'edit' : 'add';
 }
 
+// Открыли форму изменения - подставляем в неё текущие данные.
 if ($action === 'edit' && $id > 0 && !$errors) {
     $client = $clientContext->getById($id);
 
@@ -79,12 +87,14 @@ if ($action === 'edit' && $id > 0 && !$errors) {
     ];
 }
 
+// Параметры списка: сортировка (только из разрешённых столбцов), номер страницы. Поиск - по фамилии.
 $search = trim($_GET['search'] ?? '');
 $sort = in_array($_GET['sort'] ?? '', ClientContext::SORTABLE_COLUMNS, true) ? $_GET['sort'] : 'last_name';
 $dir = ($_GET['dir'] ?? '') === 'desc' ? 'desc' : 'asc';
 $perPage = 5;
 $page = max(1, (int)($_GET['page'] ?? 1));
 
+// Всего клиентов считаем отдельно, чтобы знать число страниц; текущую страницу не даём выйти за их пределы.
 $totalClients = ($action === 'list') ? $clientContext->countAll($search) : 0;
 $totalPages = max(1, (int)ceil($totalClients / $perPage));
 $page = min($page, $totalPages);
@@ -92,6 +102,7 @@ $offset = ($page - 1) * $perPage;
 
 $clients = ($action === 'list') ? $clientContext->getAll($search, $sort, $dir, $perPage, $offset) : [];
 
+// Данные готовы - подключаем шапку и выводим страницу.
 $pageTitle = 'Клиенты';
 $activePage = 'clients';
 require_once __DIR__ . '/../elements/head.php';

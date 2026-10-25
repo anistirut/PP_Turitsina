@@ -1,5 +1,9 @@
 <?php
 
+// Страница «Записи»: список с фильтрами, календарь, добавление, изменение, удаление.
+// Перед сохранением проверяем, что мастер и кабинет в это время свободны.
+
+// Подключаем сессию, БД и нужные классы. Гостей requireAuth() отправляет на вход.
 session_start();
 
 require_once __DIR__ . '/../../backend/functions/connectionDB.php';
@@ -12,6 +16,17 @@ require_once __DIR__ . '/../../backend/classes/RoomContext.php';
 
 requireAuth();
 
+// Текст ошибки «занято». $conflict - запись, с которой есть пересечение (время начала и длительность услуги).
+function busyMessage(string $who, array $conflict): string
+{
+    $start = new DateTime($conflict['appointment_datetime']);
+    $end = (clone $start)->modify('+' . $conflict['duration_minutes'] . ' minutes');
+
+    return $who . ' уже занят в это время: с ' . $start->format('d.m.Y H:i')
+        . ' до ' . $end->format('H:i') . '.';
+}
+
+// Допустимые статусы записи.
 $statuses = ['Запланировано', 'Завершено', 'Отменено'];
 
 $appointmentContext = new AppointmentContext($mysqli);
@@ -20,8 +35,10 @@ $masterContext = new MasterContext($mysqli);
 $serviceContext = new ServiceContext($mysqli);
 $roomContext = new RoomContext($mysqli);
 
+// action: list - таблица или календарь (см. $view), add - форма добавления, edit - форма изменения.
 $action = $_GET['action'] ?? 'list';
 $id = (int)($_GET['id'] ?? 0);
+// Фильтры списка; 0 значит «не фильтровать».
 $filterClientId = (int)($_GET['filter_client_id'] ?? 0);
 $filterMasterId = (int)($_GET['filter_master_id'] ?? 0);
 $filterServiceId = (int)($_GET['filter_service_id'] ?? 0);
@@ -36,6 +53,7 @@ $formData = [
     'comment' => '',
 ];
 
+// Удаление: форму с кнопкой «Удалить» отправляет таблица.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete') {
     $deleteId = (int)($_POST['id'] ?? 0);
     $appointmentContext->delete($deleteId);
@@ -43,6 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
     exit;
 }
 
+// Быстрая смена статуса кнопками «Завершить» и «Отменить» в таблице.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'quick_status') {
     $quickId = (int)($_POST['id'] ?? 0);
     $quickStatus = $_POST['status'] ?? '';
@@ -67,6 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'quick
     exit;
 }
 
+// Сохранение формы: сначала проверяем поля, потом create или update.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save') {
     $id = (int)($_POST['id'] ?? 0);
     $formData = [
@@ -79,11 +99,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save'
         'comment' => trim($_POST['comment'] ?? ''),
     ];
 
+    // Поле datetime-local отдаёт «2026-09-15T12:00», а MySQL нужен вид «2026-09-15 12:00:00».
     $appointmentDateTime = str_replace('T', ' ', $formData['appointment_date']);
     if (strlen($appointmentDateTime) === 16) {
         $appointmentDateTime .= ':00';
     }
 
+    // Обязательные поля.
     if ($formData['client_id'] <= 0) {
         $errors[] = 'Выберите клиента.';
     }
@@ -102,31 +124,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save'
     if (!in_array($formData['status'], $statuses, true)) {
         $errors[] = 'Выберите корректный статус.';
     }
+    // Мастер должен оказывать выбранную услугу.
     if ($formData['master_id'] > 0 && $formData['service_id'] > 0
         && !in_array($formData['service_id'], $masterContext->getServiceIds($formData['master_id']), true)
     ) {
         $errors[] = 'Выбранный мастер не оказывает эту услугу.';
     }
 
+    // Проверка занятости: время записи не должно пересекаться с другой записью этого мастера
+    // или с записью в этом же кабинете. Длительность берём из услуги.
     if (!$errors && $formData['master_id'] > 0 && $formData['service_id'] > 0 && $formData['appointment_date'] !== '') {
         $service = $serviceContext->getById($formData['service_id']);
 
         if ($service) {
             $masterConflict = $appointmentContext->findConflict($formData['master_id'], $appointmentDateTime, $service->duration_minutes, $id);
             if ($masterConflict) {
-                $conflictStart = new DateTime($masterConflict['appointment_datetime']);
-                $conflictEnd = (clone $conflictStart)->modify('+' . $masterConflict['duration_minutes'] . ' minutes');
-                $errors[] = 'Мастер уже занят в это время: с ' . $conflictStart->format('d.m.Y H:i')
-                    . ' до ' . $conflictEnd->format('H:i') . '.';
+                $errors[] = busyMessage('Мастер', $masterConflict);
             }
 
             if ($formData['room_id'] > 0) {
                 $roomConflict = $appointmentContext->findRoomConflict($formData['room_id'], $appointmentDateTime, $service->duration_minutes, $id);
                 if ($roomConflict) {
-                    $conflictStart = new DateTime($roomConflict['appointment_datetime']);
-                    $conflictEnd = (clone $conflictStart)->modify('+' . $roomConflict['duration_minutes'] . ' minutes');
-                    $errors[] = 'Кабинет уже занят в это время: с ' . $conflictStart->format('d.m.Y H:i')
-                        . ' до ' . $conflictEnd->format('H:i') . '.';
+                    $errors[] = busyMessage('Кабинет', $roomConflict);
                 }
             }
         }
@@ -169,6 +188,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save'
     $action = $id > 0 ? 'edit' : 'add';
 }
 
+// Открыли форму изменения - подставляем в неё текущие данные.
 if ($action === 'edit' && $id > 0 && !$errors) {
     $appointment = $appointmentContext->getById($id);
 
@@ -188,10 +208,12 @@ if ($action === 'edit' && $id > 0 && !$errors) {
     ];
 }
 
+// Из календаря можно перейти к добавлению записи на конкретный день (?date=ГГГГ-ММ-ДД).
 if ($action === 'add' && $_SERVER['REQUEST_METHOD'] !== 'POST' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_GET['date'] ?? '')) {
     $formData['appointment_date'] = $_GET['date'] . 'T10:00';
 }
 
+// Режим страницы: список или календарь; $month - показанный месяц в виде ГГГГ-ММ.
 $view = ($_GET['view'] ?? 'list') === 'calendar' ? 'calendar' : 'list';
 $month = preg_match('/^\d{4}-\d{2}$/', $_GET['month'] ?? '') ? $_GET['month'] : date('Y-m');
 $monthTimestamp = strtotime($month . '-01');
@@ -206,6 +228,7 @@ $monthNames = [
 ];
 $monthLabel = $monthNames[$calendarMonth] . ' ' . $calendarYear;
 
+// Записи месяца раскладываем по дням, чтобы календарь выводил их в нужных ячейках.
 $appointmentsByDay = [];
 if ($action === 'list' && $view === 'calendar') {
     foreach ($appointmentContext->getForMonth($calendarYear, $calendarMonth) as $row) {
@@ -214,6 +237,7 @@ if ($action === 'list' && $view === 'calendar') {
     }
 }
 
+// Параметры списка: сортировка (только из разрешённых столбцов), номер страницы.
 $sort = array_key_exists($_GET['sort'] ?? '', AppointmentContext::SORTABLE_COLUMNS) ? $_GET['sort'] : 'date';
 $dir = ($_GET['dir'] ?? '') === 'asc' ? 'asc' : 'desc';
 $perPage = 5;
@@ -229,12 +253,14 @@ $offset = ($page - 1) * $perPage;
 $appointments = ($action === 'list')
     ? $appointmentContext->getAllWithDetails($filterClientId, $filterMasterId, $filterServiceId, $sort, $dir, $perPage, $offset)
     : [];
+// Справочники для фильтров и формы. Кабинеты и связи мастеров с услугами нужны только в форме.
 $clients = ($action === 'list' || $action === 'add' || $action === 'edit') ? $clientContext->getAll() : [];
 $masters = ($action === 'list' || $action === 'add' || $action === 'edit') ? $masterContext->getAll() : [];
 $services = ($action === 'list' || $action === 'add' || $action === 'edit') ? $serviceContext->getAll() : [];
 $rooms = ($action === 'add' || $action === 'edit') ? $roomContext->getAll() : [];
 $masterServiceMap = ($action === 'add' || $action === 'edit') ? $masterContext->getAllServiceIds() : [];
 
+// CSS-класс цветной метки для каждого статуса.
 $statusClasses = [
     'Запланировано' => 'status-planned',
     'Завершено' => 'status-done',
@@ -380,6 +406,7 @@ require_once __DIR__ . '/../elements/siteHeader.php';
             <tbody>
                 <tr>
                 <?php
+                // Сетка календаря: пустые ячейки до первого дня месяца, затем дни, затем пустые ячейки до конца недели.
                 $daysInMonth = (int)date('t', $monthTimestamp);
                 $firstWeekday = (int)date('N', $monthTimestamp);
                 $column = 0;
@@ -490,10 +517,12 @@ require_once __DIR__ . '/../elements/siteHeader.php';
 
         <script>
             (function () {
+                // У каждого мастера свой набор услуг: в списке услуг оставляем только подходящие.
                 var masterServices = <?= json_encode($masterServiceMap) ?>;
                 var masterSelect = document.getElementById('master_id');
                 var serviceSelect = document.getElementById('service_id');
 
+                // Прячет услуги, которых у выбранного мастера нет. Если выбранная услуга не подходит - сбрасывает её.
                 function filterServices() {
                     var hasMaster = masterSelect.value !== '';
                     var allowed = hasMaster ? (masterServices[masterSelect.value] || []) : null;

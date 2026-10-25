@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../models/Appointment.php';
 
+// Работа с таблицей appointments: журнал записей, календарь, проверка занятости.
 class AppointmentContext
 {
     /** Ключ фильтра/сортировки на странице => реальное выражение колонки в SQL. */
@@ -77,6 +78,7 @@ class AppointmentContext
         return $rows;
     }
 
+    // Сколько записей подходит под те же фильтры, что и в getAllWithDetails() (для пагинации).
     public function countWithDetails(int $clientId = 0, int $masterId = 0, int $serviceId = 0): int
     {
         [$where, $params, $types] = $this->buildFilter($clientId, $masterId, $serviceId);
@@ -97,6 +99,7 @@ class AppointmentContext
         return (int)$row['cnt'];
     }
 
+    // Собирает условие WHERE для фильтров. Возвращает [текст условия, значения, типы для bind_param].
     private function buildFilter(int $clientId, int $masterId, int $serviceId): array
     {
         $conditions = [];
@@ -206,6 +209,7 @@ class AppointmentContext
         return $row ?: null;
     }
 
+    // Одна запись по id или null.
     public function getById(int $id): ?Appointment
     {
         $stmt = $this->mysqli->prepare(
@@ -220,6 +224,7 @@ class AppointmentContext
         return $row ? $this->mapRow($row) : null;
     }
 
+    // Добавляет запись, возвращает её id.
     public function create(
         int $clientId,
         int $masterId,
@@ -250,6 +255,7 @@ class AppointmentContext
         return $id;
     }
 
+    // Меняет запись.
     public function update(
         int $id,
         int $clientId,
@@ -282,6 +288,7 @@ class AppointmentContext
         return $success;
     }
 
+    // Удаляет запись.
     public function delete(int $id): bool
     {
         $stmt = $this->mysqli->prepare("DELETE FROM appointments WHERE id = ?");
@@ -292,6 +299,7 @@ class AppointmentContext
         return $success;
     }
 
+    // Строка из БД -> объект Appointment.
     private function mapRow(array $row): Appointment
     {
         return new Appointment(

@@ -1,5 +1,6 @@
 <?php
 
+// Услуга (таблица services).
 class Service
 {
     public int $id;

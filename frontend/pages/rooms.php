@@ -1,5 +1,8 @@
 <?php
 
+// Страница «Кабинеты»: список с поиском, добавление, изменение, удаление.
+
+// Подключаем сессию, БД и нужные классы. Гостей requireAuth() отправляет на вход.
 session_start();
 
 require_once __DIR__ . '/../../backend/functions/connectionDB.php';
@@ -10,11 +13,13 @@ requireAuth();
 
 $roomContext = new RoomContext($mysqli);
 
+// action: list - таблица, add - форма добавления, edit - форма изменения.
 $action = $_GET['action'] ?? 'list';
 $id = (int)($_GET['id'] ?? 0);
 $errors = [];
 $formData = ['number' => '', 'description' => ''];
 
+// Удаление: форму с кнопкой «Удалить» отправляет таблица.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete') {
     $deleteId = (int)($_POST['id'] ?? 0);
     $roomContext->delete($deleteId);
@@ -22,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delet
     exit;
 }
 
+// Сохранение формы: сначала проверяем поля, потом create или update.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save') {
     $id = (int)($_POST['id'] ?? 0);
     $formData = [
@@ -45,6 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save'
 
             header('Location: rooms.php');
             exit;
+        // Код 1062 - нарушена уникальность (кабинет с таким номером уже есть).
         } catch (mysqli_sql_exception $e) {
             $errors[] = $e->getCode() === 1062
                 ? 'Кабинет с таким номером уже существует.'
@@ -55,6 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save'
     $action = $id > 0 ? 'edit' : 'add';
 }
 
+// Открыли форму изменения - подставляем в неё текущие данные.
 if ($action === 'edit' && $id > 0 && !$errors) {
     $room = $roomContext->getById($id);
 
@@ -69,13 +77,16 @@ if ($action === 'edit' && $id > 0 && !$errors) {
     ];
 }
 
+// Параметры списка: сортировка (только из разрешённых столбцов), номер страницы.
 $sort = in_array($_GET['sort'] ?? '', RoomContext::SORTABLE_COLUMNS, true) ? $_GET['sort'] : 'number';
 $dir = ($_GET['dir'] ?? '') === 'desc' ? 'desc' : 'asc';
 $perPage = 5;
 $page = max(1, (int)($_GET['page'] ?? 1));
 
+// Поиск - по номеру и описанию кабинета.
 $search = trim($_GET['search'] ?? '');
 
+// Всего кабинетов считаем отдельно, чтобы знать число страниц; текущую страницу не даём выйти за их пределы.
 $totalRooms = ($action === 'list') ? $roomContext->countAll($search) : 0;
 $totalPages = max(1, (int)ceil($totalRooms / $perPage));
 $page = min($page, $totalPages);
@@ -83,6 +94,7 @@ $offset = ($page - 1) * $perPage;
 
 $rooms = ($action === 'list') ? $roomContext->getAll($search, $sort, $dir, $perPage, $offset) : [];
 
+// Данные готовы - подключаем шапку и выводим страницу.
 $pageTitle = 'Кабинеты';
 $activePage = 'rooms';
 require_once __DIR__ . '/../elements/head.php';

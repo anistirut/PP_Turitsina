@@ -1,5 +1,9 @@
 <?php
 
+// Выгрузка данных в Excel. В параметре entity указано, что выгружать:
+// clients, masters, services, rooms или appointments.
+
+// Подключаем сессию, БД и нужные классы. Гостей requireAuth() отправляет на вход.
 session_start();
 
 require_once __DIR__ . '/../../backend/functions/connectionDB.php';
@@ -15,6 +19,7 @@ requireAuth();
 
 $entity = $_GET['entity'] ?? '';
 
+// Книга и лист создаются один раз, а в каждой ветке ниже заполняются своя шапка и данные.
 $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
 $sheet = $spreadsheet->getActiveSheet();
 $filename = 'export.xlsx';
@@ -92,11 +97,13 @@ if ($entity === 'clients') {
     exit('Неизвестный раздел для экспорта.');
 }
 
+// Ширину столбцов подгоняем под содержимое, первую строку выделяем жирным.
 foreach (range('A', $sheet->getHighestColumn()) as $column) {
     $sheet->getColumnDimension($column)->setAutoSize(true);
 }
 $sheet->getStyle('A1:' . $sheet->getHighestColumn() . '1')->getFont()->setBold(true);
 
+// Отдаём файл прямо в браузер на скачивание, на сервере он не сохраняется.
 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 header('Content-Disposition: attachment; filename="' . $filename . '"');
 header('Cache-Control: max-age=0');

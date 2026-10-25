@@ -1,11 +1,15 @@
 <?php
 
+// Страница регистрации.
+
+// Подключаем сессию, БД и нужные классы.
 session_start();
 
 require_once __DIR__ . '/../../backend/functions/connectionDB.php';
 require_once __DIR__ . '/../../backend/functions/session.php';
 require_once __DIR__ . '/../../backend/classes/UserContext.php';
 
+// Уже вошедшему форма регистрации не нужна.
 if (isLoggedIn()) {
     header('Location: clients.php');
     exit;
@@ -15,6 +19,7 @@ $error = '';
 $success = false;
 $loginValue = '';
 
+// Проверки по порядку: пустые поля, длина логина и пароля, совпадение паролей, занятый логин.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $loginValue = trim($_POST['login'] ?? '');
     $password = $_POST['password'] ?? '';
@@ -33,12 +38,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($userContext->findByLogin($loginValue) !== null) {
         $error = 'Пользователь с таким логином уже существует.';
     } else {
+        // Пароль в БД сохраняем только в виде хеша.
         $userContext->create($loginValue, password_hash($password, PASSWORD_DEFAULT));
         $success = true;
     }
 }
 
 $pageTitle = 'Регистрация';
+// Класс у body включает отдельную вёрстку страниц входа (без шапки сайта).
 $bodyClass = 'auth-page';
 require_once __DIR__ . '/../elements/head.php';
 ?>

@@ -1,5 +1,6 @@
 <?php
 
+// Запросы для отчётов. Своей таблицы нет, данные собираются из нескольких таблиц через JOIN.
 class ReportContext
 {
     private mysqli $mysqli;

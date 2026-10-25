@@ -2,8 +2,10 @@
 
 require_once __DIR__ . '/../models/Master.php';
 
+// Работа с таблицей masters и со связью мастеров с услугами (master_service).
 class MasterContext
 {
+    // По этим столбцам можно сортировать. Имя столбца в ORDER BY нельзя передать параметром, поэтому проверяем по списку.
     public const SORTABLE_COLUMNS = ['last_name', 'first_name', 'phone', 'hire_date'];
 
     private mysqli $mysqli;
@@ -13,6 +15,7 @@ class MasterContext
         $this->mysqli = $mysqli;
     }
 
+    // Все мастера по алфавиту, без постраничного вывода (для выпадающих списков и выгрузки).
     public function getAll(): array
     {
         $result = $this->mysqli->query(
@@ -77,6 +80,7 @@ class MasterContext
         return $rows;
     }
 
+    // Общее количество мастеров (для пагинации).
     public function countAll(): int
     {
         $result = $this->mysqli->query("SELECT COUNT(*) AS cnt FROM masters");
@@ -85,6 +89,7 @@ class MasterContext
         return (int)$row['cnt'];
     }
 
+    // Один мастер по id или null.
     public function getById(int $id): ?Master
     {
         $stmt = $this->mysqli->prepare(
@@ -98,6 +103,7 @@ class MasterContext
         return $row ? $this->mapRow($row) : null;
     }
 
+    // Добавляет мастера, возвращает его id.
     public function create(string $lastName, string $firstName, string $phone, string $hireDate): int
     {
         $stmt = $this->mysqli->prepare(
@@ -111,6 +117,7 @@ class MasterContext
         return $id;
     }
 
+    // Меняет данные мастера.
     public function update(int $id, string $lastName, string $firstName, string $phone, string $hireDate): bool
     {
         $stmt = $this->mysqli->prepare(
@@ -123,6 +130,7 @@ class MasterContext
         return $success;
     }
 
+    // Удаляет мастера.
     public function delete(int $id): bool
     {
         $stmt = $this->mysqli->prepare("DELETE FROM masters WHERE id = ?");
@@ -195,6 +203,7 @@ class MasterContext
         $this->mysqli->commit();
     }
 
+    // Строка из БД -> объект Master.
     private function mapRow(array $row): Master
     {
         return new Master(

@@ -1,5 +1,8 @@
 <?php
 
+// Профиль: логин текущего пользователя и смена пароля.
+
+// Подключаем сессию, БД и нужные классы. Гостей requireAuth() отправляет на вход.
 session_start();
 
 require_once __DIR__ . '/../../backend/functions/connectionDB.php';
@@ -9,6 +12,7 @@ require_once __DIR__ . '/../../backend/classes/UserContext.php';
 requireAuth();
 
 $userContext = new UserContext($mysqli);
+// Читаем пользователя из БД по id из сессии.
 $currentUser = $userContext->getById((int)$_SESSION['user']['id']);
 
 if (!$currentUser) {
@@ -20,6 +24,7 @@ if (!$currentUser) {
 $errors = [];
 $success = false;
 
+// Смена пароля: проверяем текущий пароль, длину нового и совпадение повторного ввода.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $currentPassword = $_POST['current_password'] ?? '';
     $newPassword = $_POST['new_password'] ?? '';
@@ -39,6 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Данные готовы - подключаем шапку и выводим страницу.
 $pageTitle = 'Профиль';
 $activePage = 'profile';
 require_once __DIR__ . '/../elements/head.php';

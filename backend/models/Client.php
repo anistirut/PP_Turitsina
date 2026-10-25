@@ -1,5 +1,6 @@
 <?php
 
+// Клиент салона (таблица clients).
 class Client
 {
     public int $id;

@@ -389,6 +389,7 @@ button:focus-visible {
     cursor: pointer;
 }
 
+/* Блок с таблицей, который обновляет liveSearch.js: пока идёт запрос, он бледнеет */
 #live-results {
     transition: opacity 0.15s;
 }
@@ -397,7 +398,7 @@ button:focus-visible {
     opacity: 0.55;
 }
 
-/* Профиль */
+/* Профиль: две карточки (учётная запись и смена пароля) */
 
 .profile-layout {
     display: grid;
@@ -536,6 +537,7 @@ td[colspan] {
     color: var(--c-muted);
 }
 
+/* font-size: 0 убирает пробелы между кнопками, расстояние задают только margin */
 td.actions {
     font-size: 0;
     text-align: right;
@@ -907,6 +909,7 @@ td.actions form .btn {
     box-shadow: 0 1px 0 var(--c-plum);
 }
 
+/* Chrome красит автозаполненные поля в свой цвет, возвращаем фон страницы */
 .auth-field input:-webkit-autofill {
     -webkit-box-shadow: 0 0 0 1000px var(--c-ivory) inset;
     -webkit-text-fill-color: var(--c-ink);

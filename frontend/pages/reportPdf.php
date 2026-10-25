@@ -1,5 +1,8 @@
 <?php
 
+// Отчёт в PDF. Принимает те же параметры, что и страница отчётов (type, master_id, client_id, даты).
+
+// Подключаем сессию, БД и нужные классы. Гостей requireAuth() отправляет на вход.
 session_start();
 
 require_once __DIR__ . '/../../backend/functions/connectionDB.php';
@@ -15,6 +18,7 @@ $reportContext = new ReportContext($mysqli);
 $masterContext = new MasterContext($mysqli);
 $clientContext = new ClientContext($mysqli);
 
+// Названия отчётов для заголовка документа.
 $reportTitles = [
     'masters_services'    => 'Мастера и услуги',
     'master_schedule'     => 'Расписание мастера',
@@ -33,6 +37,8 @@ $clientId = (int)($_GET['client_id'] ?? 0);
 $dateFrom = trim($_GET['date_from'] ?? '');
 $dateTo = trim($_GET['date_to'] ?? '');
 
+// Любой отчёт сводим к одному виду: заголовки столбцов, строки и подпись.
+// Дальше таблица для PDF строится одинаково для всех отчётов.
 $columns = [];
 $rows = [];
 $subtitle = '';
@@ -87,15 +93,19 @@ if ($type === 'masters_services') {
     }
 }
 
+// Короткая обёртка над htmlspecialchars для вывода в HTML.
 $e = static fn(string $value): string => htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
 
+// В этих отчётах последний столбец - число, выравниваем его вправо.
 $numericLast = in_array($type, ['masters_count', 'services_popularity'], true);
+// Цвет текста для статусов записей.
 $statusClasses = [
     'Запланировано' => 'st-planned',
     'Завершено' => 'st-done',
     'Отменено' => 'st-cancelled',
 ];
 
+// Стили для Dompdf. Он понимает не весь CSS (нет flex, переменных), поэтому всё задано напрямую.
 $css = '
     @page { margin: 0; }
     body { margin: 0; font-family: "DejaVu Sans", sans-serif; font-size: 10.5px; color: #231820; }
@@ -158,6 +168,7 @@ foreach ($rows as $rowIndex => $row) {
 }
 $html .= '</tbody></table></div></body></html>';
 
+// Шрифт DejaVu Sans нужен, потому что он поддерживает русские буквы.
 $options = new \Dompdf\Options();
 $options->set('defaultFont', 'DejaVu Sans');
 $options->set('isRemoteEnabled', false);
@@ -167,6 +178,7 @@ $dompdf->loadHtml($html);
 $dompdf->setPaper('A4', 'portrait');
 $dompdf->render();
 
+// Колонтитул с номером страницы рисуем после render(), когда уже известно общее число страниц.
 $canvas = $dompdf->getCanvas();
 $footerFont = $dompdf->getFontMetrics()->getFont('DejaVu Sans');
 $canvas->page_text(36, $canvas->get_height() - 32, 'Салон красоты Turka', $footerFont, 8, [0.44, 0.39, 0.37]);

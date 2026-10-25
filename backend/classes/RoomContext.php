@@ -2,8 +2,10 @@
 
 require_once __DIR__ . '/../models/Room.php';
 
+// Работа с таблицей rooms: список с поиском, добавление, изменение, удаление.
 class RoomContext
 {
+    // По этим столбцам можно сортировать. Имя столбца в ORDER BY нельзя передать параметром, поэтому проверяем по списку.
     public const SORTABLE_COLUMNS = ['number', 'description'];
 
     private mysqli $mysqli;
@@ -13,6 +15,7 @@ class RoomContext
         $this->mysqli = $mysqli;
     }
 
+    // Список кабинетов. $search ищет по номеру и описанию, $limit = 0 значит «без ограничения».
     public function getAll(
         string $search = '',
         string $sortColumn = 'number',
@@ -61,6 +64,7 @@ class RoomContext
         return $rooms;
     }
 
+    // Сколько кабинетов подходит под поиск (нужно, чтобы посчитать страницы).
     public function countAll(string $search = ''): int
     {
         $sql = "SELECT COUNT(*) AS cnt FROM rooms";
@@ -83,6 +87,7 @@ class RoomContext
         return (int)$row['cnt'];
     }
 
+    // Один кабинет по id или null.
     public function getById(int $id): ?Room
     {
         $stmt = $this->mysqli->prepare("SELECT id, number, description FROM rooms WHERE id = ?");
@@ -94,6 +99,7 @@ class RoomContext
         return $row ? $this->mapRow($row) : null;
     }
 
+    // Добавляет кабинет, возвращает его id.
     public function create(string $number, ?string $description): int
     {
         $stmt = $this->mysqli->prepare("INSERT INTO rooms (number, description) VALUES (?, ?)");
@@ -105,6 +111,7 @@ class RoomContext
         return $id;
     }
 
+    // Меняет данные кабинета.
     public function update(int $id, string $number, ?string $description): bool
     {
         $stmt = $this->mysqli->prepare("UPDATE rooms SET number = ?, description = ? WHERE id = ?");
@@ -115,6 +122,7 @@ class RoomContext
         return $success;
     }
 
+    // Удаляет кабинет.
     public function delete(int $id): bool
     {
         $stmt = $this->mysqli->prepare("DELETE FROM rooms WHERE id = ?");
@@ -125,6 +133,7 @@ class RoomContext
         return $success;
     }
 
+    // Строка из БД -> объект Room.
     private function mapRow(array $row): Room
     {
         return new Room(

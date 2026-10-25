@@ -1,5 +1,6 @@
 <?php
 
+// Пользователь системы (таблица users). В password лежит хеш
 class User
 {
     public int $id;
